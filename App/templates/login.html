@@ -6,85 +6,147 @@
 	<title>Clarity - Login</title>
 	<link rel="icon" type="image/png" href="../assets/pictures/favicon.png">
 	<link rel="stylesheet" href="../static/css/style.css">
+    <style>
+        .login-body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f6f8fb 0%, #e9eef5 100%);
+            margin: 0;
+            padding: 20px;
+        }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 440px;
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .login-logo-centered {
+            display: block;
+            margin: 0 auto 30px;
+            max-height: 50px;
+        }
+        .login-card-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-card-header h2 {
+            font-size: 1.75rem;
+            color: #0f172a;
+            margin: 5px 0;
+        }
+        .login-card-header .subtext {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+        .login-footer-links {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .secondary-link-box {
+            background: #f8fafc;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+        .secondary-link-box:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+    </style>
 </head>
 <body class="login-body">
-	<div class="login-shell">
-		<div class="login-panel">
-			<div class="login-hero">
-				<div class="login-badge">Clarity Financials</div>
-				<img src="../assets/pictures/clarity_logo.png" alt="Clarity" class="login-logo">
-				<h1>Financial Tracker</h1>
-				<p>Control revenue, expenses, and surplus at a glance.</p>
-				<ul class="login-highlights">
-					<li>Live metrics per timeframe</li>
-					<li>Intelligent assistants</li>
-					<li>Secure access for your team</li>
-				</ul>
-			</div>
+	<div class="login-card">
+        <img src="../assets/pictures/clarity_logo.png" alt="Clarity" class="login-logo-centered">
 
-			<div class="login-card">
-				<div id="rememberedUserBox" style="display: none; margin-bottom: 30px; padding: 25px; background: white; border: 1.5px solid #e2e8f0; border-radius: 16px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-					<p style="font-size: 0.8em; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">Welcome back</p>
-					
-					<div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
-						<div style="width: 48px; height: 48px; background: linear-gradient(135deg, #6f42c1 0%, #a06ee1 100%); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.4rem; box-shadow: 0 4px 10px rgba(111, 66, 193, 0.2);" id="userInitial">?</div>
-						<div style="text-align: left;">
-							<div id="rememberedName" style="font-weight: 700; color: #0f172a; font-size: 1.1rem; line-height: 1.2;">User Name</div>
-							<div id="rememberedEmail" style="font-size: 0.85em; color: #64748b; margin-top: 2px;">user@company.com</div>
-						</div>
-					</div>
+        <!-- Remembered User Box -->
+        <div id="rememberedUserBox" style="display: none; margin-bottom: 30px; padding: 25px; background: white; border: 1.5px solid #6f42c1; border-radius: 16px; text-align: center; box-shadow: 0 4px 20px rgba(111, 66, 193, 0.1);">
+            <p style="font-size: 0.8em; font-weight: 700; color: #6f42c1; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">Welcome back</p>
+            
+            <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #6f42c1 0%, #a06ee1 100%); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.4rem; box-shadow: 0 4px 10px rgba(111, 66, 193, 0.2);" id="userInitial">?</div>
+                <div style="text-align: left;">
+                    <div id="rememberedName" style="font-weight: 700; color: #0f172a; font-size: 1.1rem; line-height: 1.2;">User Name</div>
+                    <div id="rememberedEmail" style="font-size: 0.85em; color: #64748b; margin-top: 2px;">user@company.com</div>
+                </div>
+            </div>
 
-					<div style="display: flex; flex-direction: column; gap: 12px;">
-						<button id="btnLoginRemembered" class="login-button" style="width: 100%; padding: 14px; font-size: 1rem;">Login as <span id="btnName">User</span></button>
-						<a href="#" id="btnSwitchAccount" style="font-size: 0.85em; color: #64748b; text-decoration: none; font-weight: 600; padding: 8px; transition: color 0.2s;">Use a different account</a>
-					</div>
-				</div>
-
-				<div class="login-card-header" id="loginHeader">
-					<p class="eyebrow">Sign in</p>
-					<h2>Welcome back</h2>
-					<p class="subtext">Log in with your credentials to open the dashboard.</p>
-				</div>
-
-				<form id="loginForm" class="login-form" method="POST" novalidate>					<label for="email">Email</label>
-					<input id="email" name="email" type="email" placeholder="name@company.com" required>
-
-					<label for="password">Password</label>
-					<input id="password" name="password" type="password" placeholder="••••••••" required>
-
-					<div class="login-actions">
-						<label class="checkbox">
-							<input type="checkbox" id="remember" checked>
-							<span>Stay signed in</span>
-						</label>
-						<a href="#" class="link">Forgot password?</a>
-					</div>
-
-					<button type="submit" class="login-button">Login</button>
-					<p id="loginError" class="login-error" aria-live="polite"></p>
-                    <div style="margin-top: 25px; text-align: center; font-size: 0.95em; color: #64748b; display: flex; flex-direction: column; gap: 15px;">
-                        <div style="padding: 12px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
-                            Got an invite code? <a href="/signup" class="link" style="font-weight: 700; color: #6f42c1;">Join your team</a>
-                        </div>
-                        <div style="font-size: 0.85em; opacity: 0.8;">
-                            Need to onboard a new organization? <a href="/register-company" class="link" style="font-weight: 600;">Register Company</a>
-                        </div>
-                    </div>
-				</form>
-			</div>
-		</div>
-
-        <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); text-align: center; width: 100%; pointer-events: none;">
-            <p style="color: rgba(255,255,255,0.6); font-size: 0.85em;">&copy; 2026 Clarity <span class="footer-version"></span></p>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button id="btnLoginRemembered" class="login-button" style="width: 100%; padding: 14px; font-size: 1rem; background: #6f42c1; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">Login as <span id="btnName">User</span></button>
+                <a href="#" id="btnSwitchAccount" style="font-size: 0.85em; color: #64748b; text-decoration: none; font-weight: 600; padding: 8px;">Use a different account</a>
+            </div>
         </div>
-        <div style="position: fixed; top: 20px; right: 20px;">
-            <span id="app-version" class="version-tag" style="background: rgba(255,255,255,0.1); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.75em; border: 1px solid rgba(255,255,255,0.2); display: none;">...</span>
+
+        <!-- Normal Login Header -->
+        <div class="login-card-header" id="loginHeader">
+            <p style="text-transform: uppercase; font-size: 0.75rem; font-weight: 700; color: #6f42c1; letter-spacing: 1px; margin-bottom: 8px;">Secure Login</p>
+            <h2>Welcome back</h2>
+            <p class="subtext">Enter your credentials to access your workspace.</p>
         </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="login-form" method="POST" novalidate>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="email" style="display: block; margin-bottom: 8px; font-weight: 600; color: #1e293b; font-size: 0.9rem;">Email Address</label>
+                <input id="email" name="email" type="email" placeholder="name@company.com" required style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 1rem;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="password" style="display: block; margin-bottom: 8px; font-weight: 600; color: #1e293b; font-size: 0.9rem;">Password</label>
+                <input id="password" name="password" type="password" placeholder="••••••••" required style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 1rem;">
+            </div>
+
+            <div class="login-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; font-size: 0.85rem;">
+                <label class="checkbox" style="display: flex; align-items: center; gap: 8px; color: #64748b; cursor: pointer;">
+                    <input type="checkbox" id="remember" checked style="accent-color: #6f42c1;">
+                    <span>Stay signed in</span>
+                </label>
+                <a href="#" class="link" style="color: #6f42c1; text-decoration: none; font-weight: 600;">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="login-button" style="width: 100%; padding: 14px; background: #6f42c1; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 1rem; transition: background 0.2s;">Login to Dashboard</button>
+            
+            <p id="loginError" class="login-error" aria-live="polite" style="color: #dc2626; text-align: center; margin-top: 15px; font-size: 0.85rem; font-weight: 500;"></p>
+
+            <!-- Footer Links inside the card for focus -->
+            <div class="login-footer-links">
+                <a href="/signup" class="secondary-link-box" style="text-decoration: none;">
+                    Got an invite code? <span style="color: #6f42c1; font-weight: 700;">Join your team</span>
+                </a>
+                <div style="text-align: center; font-size: 0.8rem; color: #94a3b8;">
+                    Need a new workspace? <a href="/register-company" style="color: #64748b; font-weight: 600; text-decoration: underline;">Register Company</a>
+                </div>
+            </div>
+        </form>
 	</div>
+
+    <!-- Fixed version tag -->
+    <div style="position: fixed; top: 20px; right: 20px;">
+        <span id="app-version" class="version-tag" style="background: rgba(0,0,0,0.05); color: #64748b; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; border: 1px solid rgba(0,0,0,0.1); font-weight: 600; display: none;">...</span>
+    </div>
+
+    <!-- Copyright -->
+    <div style="position: fixed; bottom: 20px; width: 100%; text-align: center; pointer-events: none;">
+        <p style="color: #94a3b8; font-size: 0.8rem;">&copy; 2026 Clarity Financial Intelligence <span class="footer-version"></span></p>
+    </div>
 
 	<script src="../static/js/auth.js"></script>
     <script src="../static/js/dashboard.js"></script>
 </body>
 </html>
-
-
