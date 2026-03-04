@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.4] - 2026-03-04
+### Added
+- **Präzisions-Forecast:** Umstellung auf kategoriebasierte Trendanalyse für genauere Vorhersagen pro Ausgabentyp.
+- **Saisonalitäts-Faktor:** Integration eines Year-over-Year Vergleichs zur Berücksichtigung saisonaler Schwankungen (z.B. höhere Ausgaben im Dezember).
+- **Ausreißer-Bereinigung:** Algorithmus ignoriert nun untypische Einmalausgaben bei der Trendberechnung, um Verfälschungen zu vermeiden.
+- **Multi-Frequenz-Abos:** Erkennung von quartalsweisen und jährlichen Zahlungen zusätzlich zu monatlichen Abos.
+
 ## [1.1.3] - 2026-03-04
 ### Fixed
 - **Forecast-Glättung:** Die "Delle" im aktuellen Monat wurde behoben, indem unvollständige Zeiträume nun automatisch mit den Trend-Erwartungen aufgefüllt werden.

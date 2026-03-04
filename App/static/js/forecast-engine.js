@@ -1,12 +1,10 @@
 window.ForecastEngine = (function() {
     /**
      * Detects recurring transactions (subscriptions) in the given transaction list.
-     * Returns an array of objects representing identified subscriptions.
+     * Supports Monthly, Quarterly, and Yearly.
      */
     function detectSubscriptions(transactions) {
         const groups = {};
-        
-        // Group by name (lowercase)
         transactions.forEach(t => {
             const name = t.name.toLowerCase().trim();
             if (!groups[name]) groups[name] = [];
@@ -19,7 +17,6 @@ window.ForecastEngine = (function() {
             const group = groups[name].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             if (group.length < 2) continue;
 
-            // Check for regular intervals (mostly monthly)
             const intervals = [];
             for (let i = 1; i < group.length; i++) {
                 const d1 = new Date(group[i-1].timestamp);
@@ -28,207 +25,153 @@ window.ForecastEngine = (function() {
                 intervals.push(diffMonths);
             }
 
-            // Simple check: if most intervals are 1 month, it's likely a monthly subscription
-            const monthlyCount = intervals.filter(inv => inv === 1).length;
-            const isMonthly = (monthlyCount / intervals.length) > 0.7;
+            // Determine frequency
+            const freqCounts = { 1: 0, 3: 0, 12: 0 };
+            intervals.forEach(inv => { if (freqCounts[inv] !== undefined) freqCounts[inv]++; });
+            
+            let frequency = 'none';
+            if ((freqCounts[1] / intervals.length) > 0.6) frequency = 'monthly';
+            else if ((freqCounts[3] / intervals.length) > 0.6) frequency = 'quarterly';
+            else if ((freqCounts[12] / intervals.length) > 0.6) frequency = 'yearly';
 
-            if (isMonthly) {
-                // Calculate average amount
+            if (frequency !== 'none') {
                 const avgAmount = group.reduce((sum, t) => sum + parseFloat(t.wert), 0) / group.length;
-                
                 subscriptions.push({
                     name: group[0].name,
                     amount: avgAmount,
                     lastDate: new Date(group[group.length - 1].timestamp),
                     category: group[0].kategorie,
-                    frequency: 'monthly'
+                    frequency: frequency
                 });
             }
         }
-
         return subscriptions;
     }
 
     /**
-     * Calculates trends for revenue and expenses.
-     * Returns an object with growth rates.
+     * Calculates trends per category and removes outliers.
      */
-    function calculateTrends(transactions, timeframe) {
-        // We look at the last 6 months to determine a trend
+    function calculateCategoryTrends(transactions) {
         const now = new Date();
         const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
         
-        const monthlyData = {};
+        const categoryData = {}; // { category: { monthKey: { total: 0, count: 0 } } }
 
         transactions.forEach(t => {
             const d = new Date(t.timestamp);
             if (d >= sixMonthsAgo && d <= now) {
+                const cat = t.kategorie;
                 const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
-                if (!monthlyData[monthKey]) monthlyData[monthKey] = { rev: 0, exp: 0 };
+                if (!categoryData[cat]) categoryData[cat] = {};
+                if (!categoryData[cat][monthKey]) categoryData[cat][monthKey] = { total: 0, count: 0 };
+                
                 const val = parseFloat(t.wert);
-                if (val > 0) monthlyData[monthKey].rev += val;
-                else monthlyData[monthKey].exp += Math.abs(val);
+                categoryData[cat][monthKey].total += val;
+                categoryData[cat][monthKey].count++;
             }
         });
 
-        const sortedMonths = Object.keys(monthlyData).sort();
-        if (sortedMonths.length < 2) return { revenueTrend: 1.0, expenseTrend: 1.0 };
-
-        // Calculate simple average growth rate
-        let revGrowth = 0;
-        let expGrowth = 0;
-        let count = 0;
-
-        for (let i = 1; i < sortedMonths.length; i++) {
-            const prev = monthlyData[sortedMonths[i-1]];
-            const curr = monthlyData[sortedMonths[i]];
-            
-            if (prev.rev > 0) revGrowth += (curr.rev / prev.rev);
-            else if (curr.rev > 0) revGrowth += 1.05; // Default assumption if previous was 0
-            else revGrowth += 1.0;
-
-            if (prev.exp > 0) expGrowth += (curr.exp / prev.exp);
-            else if (curr.exp > 0) expGrowth += 1.05;
-            else expGrowth += 1.0;
-
-            count++;
-        }
-
-        return {
-            revenueTrend: Math.max(0.8, Math.min(1.2, revGrowth / count)), // Cap trend to reasonable values
-            expenseTrend: Math.max(0.8, Math.min(1.2, expGrowth / count))
-        };
-    }
-
-    /**
-     * Generates a forecast for future buckets.
-     */
-    function generateForecast(transactions, timeframe, startDate, endDate, labels, currentBucketIdx) {
-        const subs = detectSubscriptions(transactions);
-        const trends = calculateTrends(transactions, timeframe);
-        
-        const forecastRevenue = new Array(labels.length).fill(0);
-        const forecastExpenses = new Array(labels.length).fill(0);
-
-        // We only forecast for buckets AFTER today
-        if (currentBucketIdx < 0) return { revenue: forecastRevenue, expenses: forecastExpenses };
-
-        // Base values for trends (average of last 3 actual buckets)
-        const lastActualIdx = currentBucketIdx;
-        let baseRev = 0;
-        let baseExp = 0;
-        let baseCount = 0;
-
-        // Note: this is a simplification. In a real app, we'd distinguish between 
-        // recurring (subs) and non-recurring (trend-based) amounts.
-        
-        // For simplicity:
-        // 1. We apply subscriptions to future months
-        // 2. We apply trends to the non-subscription part, or just generally.
-
-        // Let's use a more robust approach for the demo:
-        // Project subscriptions + projected "other" expenses based on trend.
-
-        for (let i = currentBucketIdx + 1; i < labels.length; i++) {
-            let bucketDate;
-            // Approximate date for the bucket
-            if (timeframe === 'year') {
-                bucketDate = new Date(startDate.getFullYear(), i, 15);
-            } else if (timeframe === 'month') {
-                bucketDate = new Date(startDate.getFullYear(), startDate.getMonth(), i + 1);
-            } else if (timeframe === 'week') {
-                bucketDate = new Date(startDate);
-                bucketDate.setDate(startDate.getDate() + i);
-            } else {
-                bucketDate = new Date(); // Fallback
+        const trends = {};
+        for (const cat in categoryData) {
+            const months = Object.keys(categoryData[cat]).sort();
+            if (months.length < 2) {
+                trends[cat] = 1.0;
+                continue;
             }
 
-            // 1. Subscriptions
-            subs.forEach(sub => {
-                if (sub.frequency === 'monthly') {
-                    // If bucket is in a different month than lastDate, or monthly view
-                    if (timeframe === 'year') {
-                        forecastRevenue[i] += sub.amount > 0 ? sub.amount : 0;
-                        forecastExpenses[i] += sub.amount < 0 ? Math.abs(sub.amount) : 0;
-                    } else if (timeframe === 'month') {
-                        // Monthly subscriptions usually happen once a month. 
-                        // We check if the day matches.
-                        if (bucketDate.getDate() === sub.lastDate.getDate()) {
-                            forecastRevenue[i] += sub.amount > 0 ? sub.amount : 0;
-                            forecastExpenses[i] += sub.amount < 0 ? Math.abs(sub.amount) : 0;
-                        }
-                    }
+            let growthSum = 0;
+            let count = 0;
+            for (let i = 1; i < months.length; i++) {
+                const prev = Math.abs(categoryData[cat][months[i-1]].total);
+                const curr = Math.abs(categoryData[cat][months[i]].total);
+                
+                // Outlier removal: If a month is > 3x the previous, ignore it for trend
+                if (prev > 0 && curr < prev * 3) {
+                    growthSum += (curr / prev);
+                    count++;
                 }
-            });
-
-            // 2. Trend-based "Other" expenses
-            // We take the last bucket's values and apply the trend
-            const monthsAhead = (i - currentBucketIdx);
-            
-            // Just carry over and apply trend for non-subscription parts? 
-            // Too complex for JS-only without better data separation.
-            // Simpler: Carry over last known values and multiply by trend^monthsAhead
-            
-            // If we already added subscriptions, we might overcount.
-            // Let's just do a simple trended carry-over if no subscriptions were found for that bucket.
-            if (forecastRevenue[i] === 0) {
-                forecastRevenue[i] = transactions.filter(t => parseFloat(t.wert) > 0).slice(-20).reduce((a,b)=>a+parseFloat(b.wert), 0) / 20 * (timeframe === 'year' ? 30 : 1) * Math.pow(trends.revenueTrend, monthsAhead / (timeframe === 'year' ? 1 : 12));
             }
-             if (forecastExpenses[i] === 0) {
-                forecastExpenses[i] = transactions.filter(t => parseFloat(t.wert) < 0).slice(-50).reduce((a,b)=>a+Math.abs(parseFloat(b.wert)), 0) / 50 * (timeframe === 'year' ? 30 : 1) * Math.pow(trends.expenseTrend, monthsAhead / (timeframe === 'year' ? 1 : 12));
-            }
+            trends[cat] = count > 0 ? Math.max(0.7, Math.min(1.3, growthSum / count)) : 1.0;
         }
-
-        return { revenue: forecastRevenue, expenses: forecastExpenses };
+        return trends;
     }
 
     /**
-     * More advanced forecast that integrates into the existing dashboard data flow.
+     * Seasonal factor (Year-over-Year comparison).
+     */
+    function getSeasonalityFactor(transactions, targetMonth) {
+        const lastYearSameMonth = transactions.filter(t => {
+            const d = new Date(t.timestamp);
+            return d.getMonth() === targetMonth && d.getFullYear() === (new Date().getFullYear() - 1);
+        });
+        
+        if (lastYearSameMonth.length === 0) return 1.0;
+        
+        const avgMonthly = transactions.reduce((sum, t) => sum + Math.abs(parseFloat(t.wert)), 0) / (transactions.length / 30 || 1) * 30;
+        const targetMonthly = lastYearSameMonth.reduce((sum, t) => sum + Math.abs(parseFloat(t.wert)), 0);
+        
+        return Math.max(0.8, Math.min(1.5, targetMonthly / (avgMonthly || 1)));
+    }
+
+    /**
+     * Advanced Forecast.
      */
     function applyForecast(data, transactions, timeframe, startDate, endDate, labels, currentBucketIdx) {
-        if (currentBucketIdx < 0 || currentBucketIdx >= labels.length - 1) return data;
+        if (currentBucketIdx < 0 || currentBucketIdx >= labels.length) return data;
 
-        const trends = calculateTrends(transactions, timeframe);
+        const catTrends = calculateCategoryTrends(transactions);
         const subs = detectSubscriptions(transactions);
 
         const newRevenue = [...data.revenue];
         const newExpenses = [...data.expenses];
 
-        // Identify which expenses are "recurring"
-        const recurringExpensesTotal = subs.filter(s => s.amount < 0).reduce((sum, s) => sum + Math.abs(s.amount), 0);
-        const recurringRevenueTotal = subs.filter(s => s.amount > 0).reduce((sum, s) => sum + s.amount, 0);
+        // Group actuals by category to find "Base" for each
+        const categoryBase = {};
+        transactions.filter(t => new Date(t.timestamp) >= new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1))
+                   .forEach(t => {
+                       if (!categoryBase[t.kategorie]) categoryBase[t.kategorie] = { rev: 0, exp: 0 };
+                       const val = parseFloat(t.wert);
+                       if (val > 0) categoryBase[t.kategorie].rev += val;
+                       else categoryBase[t.kategorie].exp += Math.abs(val);
+                   });
 
-        // Average of last 3 actual buckets to get "base" for non-recurring
-        let avgNonRecExp = 0;
-        let avgNonRecRev = 0;
-        const lookback = Math.min(3, currentBucketIdx + 1);
-        for(let i = currentBucketIdx; i > currentBucketIdx - lookback; i--) {
-            avgNonRecExp += (data.expenses[i] || 0);
-            avgNonRecRev += (data.revenue[i] || 0);
-        }
-        avgNonRecExp /= lookback;
-        avgNonRecRev /= lookback;
-
-        // Subtract recurring from base to avoid double counting if they happened in those months
-        // (Simplified: we just use 70% of the last value as base if recurring is high)
-        const baseExp = Math.max(avgNonRecExp * 0.5, avgNonRecExp - recurringExpensesTotal);
-        const baseRev = Math.max(avgNonRecRev * 0.5, avgNonRecRev - recurringRevenueTotal);
-
-        // Start from currentBucketIdx to fill up the "dent" if it's incomplete
         for (let i = currentBucketIdx; i < labels.length; i++) {
-            const monthsOut = (timeframe === 'year' || timeframe === 'last_year') ? (i - currentBucketIdx) : (i - currentBucketIdx) / 30;
+            let bucketRev = 0;
+            let bucketExp = 0;
+            const monthsOut = (i - currentBucketIdx);
             
-            // Forecast = Subscriptions + (Base * Trend^time)
-            let bucketRev = recurringRevenueTotal + (baseRev * Math.pow(trends.revenueTrend, monthsOut));
-            let bucketExp = recurringExpensesTotal + (baseExp * Math.pow(trends.expenseTrend, monthsOut));
+            // 1. Calculate base forecast from categories (Trend + Seasonality)
+            const seasonality = getSeasonalityFactor(transactions, (startDate.getMonth() + i) % 12);
+            
+            for (const cat in categoryBase) {
+                const trend = catTrends[cat] || 1.0;
+                // Forecast = Base * Trend^time * Seasonality
+                bucketRev += categoryBase[cat].rev * Math.pow(trend, monthsOut / 12) * seasonality;
+                bucketExp += categoryBase[cat].exp * Math.pow(trend, monthsOut / 12) * seasonality;
+            }
 
-            // Add some "random" fluctuation for realism
-            const fluctuation = 1 + (Math.random() * 0.1 - 0.05);
-            const targetRev = bucketRev * fluctuation;
-            const targetExp = bucketExp * fluctuation;
+            // 2. Add Subscriptions (Quarterly/Yearly check)
+            subs.forEach(sub => {
+                const targetDate = new Date(startDate.getFullYear(), startDate.getMonth() + i, 15);
+                const monthsSinceLast = (targetDate.getFullYear() - sub.lastDate.getFullYear()) * 12 + (targetDate.getMonth() - sub.lastDate.getMonth());
+                
+                let isDue = false;
+                if (sub.frequency === 'monthly') isDue = true;
+                else if (sub.frequency === 'quarterly' && monthsSinceLast % 3 === 0) isDue = true;
+                else if (sub.frequency === 'yearly' && monthsSinceLast % 12 === 0) isDue = true;
+
+                if (isDue) {
+                    if (sub.amount > 0) bucketRev += sub.amount;
+                    else bucketExp += Math.abs(sub.amount);
+                }
+            });
+
+            // Random fluctuation for a natural look (3%)
+            const jitter = 1 + (Math.random() * 0.06 - 0.03);
+            const targetRev = bucketRev * jitter;
+            const targetExp = bucketExp * jitter;
 
             if (i === currentBucketIdx) {
-                // Only fill up if actuals are lower than forecast (smoothing the dent)
                 newRevenue[i] = Math.max(newRevenue[i], targetRev);
                 newExpenses[i] = Math.max(newExpenses[i], targetExp);
             } else {
@@ -242,7 +185,7 @@ window.ForecastEngine = (function() {
 
     return {
         detectSubscriptions,
-        calculateTrends,
+        calculateCategoryTrends,
         applyForecast
     };
 })();
