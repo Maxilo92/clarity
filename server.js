@@ -305,8 +305,14 @@ app.get('/api/invites/validate', (req, res) => {
 
 app.get('/api/users', (req, res) => {
     const { company_id } = req.query;
-    const cDb = getCompanyDb(company_id);
-    cDb.all("SELECT id, full_name, email, role FROM users", [], (err, rows) => res.json({ users: rows || [] }));
+    if (!company_id) return res.status(400).json({ error: "Company ID required" });
+    try {
+        const cDb = getCompanyDb(company_id);
+        cDb.all("SELECT id, full_name, email, role FROM users", [], (err, rows) => {
+            if (err) return res.status(500).json({ error: "DB Error" });
+            res.json({ users: rows || [] });
+        });
+    } catch(e) { res.status(400).json({ error: e.message }); }
 });
 
 app.put('/api/users/:id', (req, res) => {
@@ -359,8 +365,22 @@ app.delete('/api/users/:id', (req, res) => {
 app.get('/api/config', (req, res) => {
     const { user_id, company_id } = req.query;
     if (!user_id || !company_id) return res.json({ app_version: APP_VERSION });
-    const cDb = getCompanyDb(company_id);
-    cDb.get("SELECT * FROM user_settings WHERE user_id = ?", [user_id], (err, row) => res.json({ ...row, app_version: APP_VERSION }));
+    
+    try {
+        // Verify company exists
+        sysDb.get("SELECT id FROM companies WHERE id = ?", [company_id], (err, comp) => {
+            if (err || !comp) return res.status(404).json({ error: "Company not found" });
+            
+            const cDb = getCompanyDb(company_id);
+            cDb.get("SELECT id FROM users WHERE id = ?", [user_id], (err, user) => {
+                if (err || !user) return res.status(404).json({ error: "User not found" });
+                
+                cDb.get("SELECT * FROM user_settings WHERE user_id = ?", [user_id], (err, row) => {
+                    res.json({ ...row, app_version: APP_VERSION });
+                });
+            });
+        });
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/config', (req, res) => {
