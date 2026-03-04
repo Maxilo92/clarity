@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2026-03-04
+### Fixed
+- **Forecast-Glättung:** Die "Delle" im aktuellen Monat wurde behoben, indem unvollständige Zeiträume nun automatisch mit den Trend-Erwartungen aufgefüllt werden.
+- **Visuelle Kontinuität:** Der Übergang zwischen Ist-Daten und Forecast im Graphen ist nun nahtlos.
+
 ## [1.1.2] - 2026-03-04
 ### Added
 - **Forecast-Engine:** Implementierung einer intelligenten Analyse-Engine zur Erkennung von Trends und Abonnements.

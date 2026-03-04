@@ -214,7 +214,8 @@ window.ForecastEngine = (function() {
         const baseExp = Math.max(avgNonRecExp * 0.5, avgNonRecExp - recurringExpensesTotal);
         const baseRev = Math.max(avgNonRecRev * 0.5, avgNonRecRev - recurringRevenueTotal);
 
-        for (let i = currentBucketIdx + 1; i < labels.length; i++) {
+        // Start from currentBucketIdx to fill up the "dent" if it's incomplete
+        for (let i = currentBucketIdx; i < labels.length; i++) {
             const monthsOut = (timeframe === 'year' || timeframe === 'last_year') ? (i - currentBucketIdx) : (i - currentBucketIdx) / 30;
             
             // Forecast = Subscriptions + (Base * Trend^time)
@@ -223,8 +224,17 @@ window.ForecastEngine = (function() {
 
             // Add some "random" fluctuation for realism
             const fluctuation = 1 + (Math.random() * 0.1 - 0.05);
-            newRevenue[i] = bucketRev * fluctuation;
-            newExpenses[i] = bucketExp * fluctuation;
+            const targetRev = bucketRev * fluctuation;
+            const targetExp = bucketExp * fluctuation;
+
+            if (i === currentBucketIdx) {
+                // Only fill up if actuals are lower than forecast (smoothing the dent)
+                newRevenue[i] = Math.max(newRevenue[i], targetRev);
+                newExpenses[i] = Math.max(newExpenses[i], targetExp);
+            } else {
+                newRevenue[i] = targetRev;
+                newExpenses[i] = targetExp;
+            }
         }
 
         return { revenue: newRevenue, expenses: newExpenses };
