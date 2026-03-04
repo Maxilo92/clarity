@@ -322,7 +322,7 @@ Your task is to support users in analyzing their finances and provide advice as 
             try {
                 const response = await fetch(API_PROXY, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages: chatMessages, company_id: companyId })
+                    body: JSON.stringify({ messages: chatMessages, company_id: companyId, user_id: userId })
                 });
                 
                 if (!response.ok) {

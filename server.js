@@ -366,12 +366,29 @@ app.post('/api/transactions', (req, res) => {
 
 app.post('/api/chat', async (req, res) => {
     const { company_id, user_id, messages } = req.body;
-    const cDb = getCompanyDb(company_id);
-    const summary = await getDatabaseSummary(company_id, user_id);
     
-    cDb.get("SELECT nickname FROM user_settings WHERE user_id = ?", [user_id], async (err, setting) => {
-        const nickname = setting?.nickname || "User";
-        const systemPrompt = `You are Joule, an intelligent financial advisor for "Clarity". 
+    if (!company_id || !user_id) {
+        return res.status(400).json({ error: "Missing company_id or user_id in chat request." });
+    }
+
+    try {
+        const cDb = getCompanyDb(company_id);
+        const summary = await getDatabaseSummary(company_id, user_id);
+        
+        cDb.get("SELECT users.full_name, user_settings.nickname FROM users LEFT JOIN user_settings ON users.id = user_settings.user_id WHERE users.id = ?", [user_id], async (err, row) => {
+            if (err) return res.status(500).json({ error: "User lookup failed." });
+            
+            // Default nickname is first name from full_name
+            let nickname = "User";
+            if (row) {
+                if (row.nickname) {
+                    nickname = row.nickname;
+                } else if (row.full_name) {
+                    nickname = row.full_name.split(' ')[0];
+                }
+            }
+
+            const systemPrompt = `You are Joule, an intelligent financial advisor for "Clarity". 
 Addressing user as ${nickname}. 
 
 SECURITY: You are strictly isolated to the data of the current user.
@@ -379,14 +396,23 @@ ${summary}
 
 Keep it professional and helpful.`;
 
-        const resp = await fetchFn("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + process.env.GROQ_API_KEY },
-            body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role:"system", content:systemPrompt}, ...messages] })
+            try {
+                const resp = await fetchFn("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + process.env.GROQ_API_KEY },
+                    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role:"system", content:systemPrompt}, ...messages] })
+                });
+                const data = await resp.json();
+                res.json(data);
+            } catch (fetchErr) {
+                console.error("Groq API error:", fetchErr);
+                res.status(500).json({ error: "AI service communication failed." });
+            }
         });
-        const data = await resp.json();
-        res.json(data);
-    });
+    } catch(e) {
+        console.error("Chat route error:", e);
+        res.status(500).json({ error: e.message });
+    }
 });
 
 app.listen(3000, () => console.log('Clarity Server running on Port 3000'));
