@@ -187,6 +187,66 @@ app.get('/api/invites/validate', (req, res) => {
     });
 });
 
+// --- User Management API ---
+
+app.get('/api/users', (req, res) => {
+    const { company_id } = req.query;
+    if (!company_id) return res.status(400).json({ error: "Company ID required" });
+    const cDb = getCompanyDb(company_id);
+    cDb.all("SELECT id, full_name, email, role FROM users", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: "Failed to fetch users" });
+        res.json({ users: rows });
+    });
+});
+
+app.put('/api/users/:id', (req, res) => {
+    const { company_id, role } = req.body;
+    if (!company_id) return res.status(400).json({ error: "Company ID required" });
+    const cDb = getCompanyDb(company_id);
+    cDb.run("UPDATE users SET role = ? WHERE id = ?", [role, req.params.id], function(err) {
+        if (err) return res.status(500).json({ error: "Failed to update user" });
+        res.json({ success: true });
+    });
+});
+
+app.delete('/api/users/:id', (req, res) => {
+    const { company_id } = req.query;
+    if (!company_id) return res.status(400).json({ error: "Company ID required." });
+    
+    const cDb = getCompanyDb(company_id);
+    const userId = req.params.id;
+
+    // Security check: Don't allow deleting the last admin
+    cDb.get("SELECT role, email FROM users WHERE id = ?", [userId], (err, user) => {
+        if (err || !user) return res.status(404).json({ error: "User not found." });
+
+        if (user.role === 'admin') {
+            cDb.get("SELECT COUNT(*) as adminCount FROM users WHERE role = 'admin'", [], (err, row) => {
+                if (err) return res.status(500).json({ error: "DB Error" });
+                if (row.adminCount <= 1) {
+                    return res.status(403).json({ 
+                        error: "last_admin", 
+                        message: "You are the last administrator. Please promote another employee to Admin before deleting your account." 
+                    });
+                }
+                performDeletion(user.email);
+            });
+        } else {
+            performDeletion(user.email);
+        }
+    });
+
+    function performDeletion(email) {
+        cDb.run("DELETE FROM users WHERE id = ?", [userId], function(err) {
+            if (err) return res.status(500).json({ error: "Failed." });
+            // Clean up index and settings
+            sysDb.run("DELETE FROM user_index WHERE email = ?", [email]);
+            cDb.run("DELETE FROM user_settings WHERE user_id = ?", [userId]);
+            res.json({ success: true });
+        });
+    }
+});
+
 // --- User Settings API ---
 
 app.get('/api/config', (req, res) => {

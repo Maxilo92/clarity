@@ -270,13 +270,21 @@
             if (finalCheck !== 'DELETE') return;
 
             try {
-                const res = await fetch(`/api/users/${currentUser.id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/users/${currentUser.id}?company_id=${currentUser.company_id}`, { method: 'DELETE' });
+                const data = await res.json();
+
                 if (res.ok) {
                     alert("Account deleted successfully.");
                     window.location.href = '/logout';
                 } else {
-                    const data = await res.json();
-                    alert("Error: " + (data.error || "Could not delete account"));
+                    if (data.error === 'last_admin') {
+                        alert("CANNOT DELETE ACCOUNT: " + data.message);
+                        if (currentUser.role === 'admin') {
+                            window.location.href = '/admin';
+                        }
+                    } else {
+                        alert("Error: " + (data.error || "Could not delete account"));
+                    }
                 }
             } catch (err) {
                 console.error(err);
