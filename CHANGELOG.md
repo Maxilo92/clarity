@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2026-03-04
+### Added
+- **Forecast-Engine:** Implementierung einer intelligenten Analyse-Engine zur Erkennung von Trends und Abonnements.
+- **Financial Insights:** Neuer Dashboard-Bereich zur Anzeige von erkannten wiederkehrenden Zahlungen und Ausgabentrends.
+- **Intelligenter Forecast:** Der Graphen-Forecast basiert nun auf historischen Trends und erkannten Abos statt einfacher linearer Fortführung.
+### Changed
+- **Clair KI-Assistent:** System-Prompts und Profil wurden um die neuen Analyse-Funktionen (Trends & Abos) erweitert.
+
 ## [1.1.1] - 2026-03-04
 ### Added
 - **Sicherung:** Aktueller Projektstand im Branch `v2` gesichert.

@@ -23,6 +23,12 @@
     const SYSTEM_PROMPT = `You are Clair, an intelligent financial advisor for "Clarity". 
 Address the user naturally. 
 
+### CAPABILITIES:
+- Transaction Analysis: Search and add transactions.
+- Subscriptions: Detect recurring payments (e.g., Netflix, Rent).
+- Trends: Identify spending patterns (e.g., "Expenses up 5%").
+- Forecast: Predict future spending based on trends and subscriptions.
+
 ### CONTEXT:
 - If the user attaches a transaction, it is ALREADY in the database. 
 - DO NOT re-add attached transactions. Use their details only to answer the user's question.
@@ -97,7 +103,7 @@ Address the user naturally.
                         <div class="clair-info-icon">🧠</div>
                         <div class="clair-info-text">
                             <strong>Expertise</strong>
-                            <span>Finanzanalyse, Budgetierung, Ausgabentrends</span>
+                            <span>Finanzanalyse, Budgetierung, Trends & Abos</span>
                         </div>
                     </div>
                     <div class="clair-info-item">
