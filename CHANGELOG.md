@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.2] - 2026-03-04
+### Changed
+- Optische Überarbeitung der Startseite (`index.html`) für einen moderneren, "Clarity"-typischen Look.
+- Überarbeitung des Hero-Bereichs mit neuen, weicheren Gradienten und dekorativen Elementen.
+- Verbesserte Hover-Effekte und Schatten ("Glassmorphism"-Ansatz) für die Quick-Link-Cards.
+- Neugestaltung des "About Us"-Bereichs mit besserer Typografie und weicheren Kontrasten.
+- Integration des globalen Versions-Tags in den Header der Startseite.
+
+## [0.3.1] - 2026-03-04
+### Added
+- Versionsnummer wird nun zusätzlich im Footer aller App-Seiten angezeigt (z.B. `(v0.3.1)`).
+- Dynamische Befüllung aller Footer-Versionsplatzhalter via `dashboard.js`.
+
+## [0.3.0] - 2026-03-04
+### Changed
+- Vollständiges Rebranding von SAP zu **Clarity**.
+- Austausch aller SAP-Logos durch das neue **Clarity-Logo**.
+- Entfernung sämtlicher SAP-Textreferenzen aus dem Codebase, Dokumentation und UI.
+- Aktualisierung der Authentifizierungs-Keys von `sapAuth`/`sapUser` zu `clarityAuth`/`clarityUser`.
+- Anpassung der Joule-System-Prompts auf ein herstellerneutrales, professionelles Clarity-Branding.
+- Umbenennung des Projekts in der `package.json` zu `clarity-financial-tracker`.
+- Bereinigung der Standard-Userdaten (Email, Abteilungen) von SAP-Referenzen.
+
+## [0.2.1] - 2026-03-04
+### Added
+- Globale Versionsnummerierung in das Dashboard-UI integriert (Header-Anzeige).
+- Upgrade des AI-Assistenten Joule auf das Modell `llama-3.3-70b-versatile`.
+- Erweiterung des Joule-System-Prompts für proaktive Finanzanalysen, Trend-Identifikation und personalisierte Beratung.
+- API-Erweiterung (`/api/config`) liefert nun die aktuelle App-Version an das Frontend.
+
 ## [0.2.0] - 2026-03-04
 ### Added
 - "v2" Datenstruktur mit deutlich höherer Fluktuation der Transaktionswerte für eine dynamischere Graphenanzeige.

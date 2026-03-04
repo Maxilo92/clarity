@@ -1,5 +1,5 @@
-const AUTH_KEY = 'sapAuth';
-const USER_KEY = 'sapUser';
+const AUTH_KEY = 'clarityAuth';
+const USER_KEY = 'clarityUser';
 
 function isAuthenticated() {
   return localStorage.getItem(AUTH_KEY) === 'true';

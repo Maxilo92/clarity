@@ -7,7 +7,7 @@
 	<link rel="stylesheet" href="../static/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 	<script>
-        if (localStorage.getItem('sapAuth') !== 'true') {
+        if (localStorage.getItem('clarityAuth') !== 'true') {
             window.location.href = 'login.html';
         }
     </script>
@@ -16,7 +16,7 @@
 	<div class="container">
 		<aside class="sidebar">
             <div class="sidebar-header">
-                <img src="../assets/pictures/sap_logo.png" alt="SAP" class="sidebar-logo">
+                <img src="../assets/pictures/clarity_logo.png" alt="Clarity" class="sidebar-logo">
             </div>
             <nav>
                 <ul class="menu">
@@ -53,13 +53,16 @@
 
 		<main class="main-content">
 			<div class="header">
-				<h1>Clarity</h1>
+				<div class="header-left">
+					<h1>Clarity</h1>
+					<span id="app-version" class="version-tag">v0.0.0</span>
+				</div>
 			</div>
 
 			<!-- Hero Section -->
 			<section class="hero-section">
-				<h2>Welcome to Clarity by SAP</h2>
-				<p>Your centralized platform for financial insights, powered by SAP's innovative AI technology. Manage your transactions with Clarity.</p>
+				<h2>Welcome to Clarity Financials</h2>
+				<p>Your centralized platform for financial insights, powered by Clarity's innovative AI technology. Manage your transactions with Clarity.</p>
 			</section>
 
 			<!-- Quick Links Grid -->
@@ -93,17 +96,17 @@
 					<div class="about-text">
                         <span class="label">OUR MISSION</span>
 						<h2>Clarity: Innovation in Finance</h2>
-						<p>We are a dedicated team of developers and financial experts at SAP, focused on redefining user interaction with complex financial ecosystems through Clarity. Our mission is to deliver intuitive, intelligent, and secure platforms for global finance management.</p>
+						<p>We are a dedicated team of developers and financial experts at Clarity, focused on redefining user interaction with complex financial ecosystems through Clarity. Our mission is to deliver intuitive, intelligent, and secure platforms for global finance management.</p>
                         <p>Clarity, born from our specialized internship program, integrates Joule, our advanced conversational AI, with industry-leading financial infrastructure.</p>
 					</div>
 					<div class="about-image">
-						<img src="../assets/pictures/sap_logo.png" alt="SAP Logo" style="max-width: 120px;">
+						<img src="../assets/pictures/clarity_logo.png" alt="Clarity Logo" style="max-width: 120px;">
 					</div>
 				</div>
 			</section>
 
 			<footer class="app-footer">
-				<p>&copy; 2026 Clarity - A SAP Financial Tracker</p>
+				<p>&copy; 2026 Clarity - An Intelligent Financial Tracker <span class="footer-version"></span></p>
 				<div class="footer-links">
 					<a href="#">Terms of Service</a>
 					<a href="#">Impressum</a>

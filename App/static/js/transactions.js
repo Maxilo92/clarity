@@ -14,7 +14,7 @@
         const cmDelete = document.getElementById('cmDelete');
         const searchInput = document.getElementById('globalSearch');
 
-        const OWN_COMPANY = "SAP";
+        const OWN_COMPANY = "Clarity";
 
         let selectedTransactionId = null;
         let currentCategoryFilter = 'all';

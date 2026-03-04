@@ -22,6 +22,10 @@ try { if (!fetchFn) fetchFn = require('node-fetch'); } catch (e) {}
 const GROQ_KEY   = process.env.GROQ_API_KEY;
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
+// Read version from package.json
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+const APP_VERSION = pkg.version;
+
 // Joule's personal context from config
 let userConfig = {};
 function loadConfig() {
@@ -29,6 +33,7 @@ function loadConfig() {
         if (fs.existsSync(CONFIG_PATH)) {
             const configData = fs.readFileSync(CONFIG_PATH, 'utf8');
             userConfig = JSON.parse(configData);
+            userConfig.app_version = APP_VERSION;
             console.log("User Config loaded for: " + (userConfig.user ? userConfig.user.full_name : "Unknown"));
         } else {
             console.error("Config not found at: " + CONFIG_PATH);
@@ -40,23 +45,33 @@ loadConfig();
 async function getDatabaseSummary() {
     return new Promise((resolve) => {
         db.all("SELECT * FROM transactions ORDER BY timestamp DESC", [], (err, rows) => {
-            if (err || !rows || rows.length === 0) return resolve("Keine Transaktionsdaten verfügbar.");
+            if (err || !rows || rows.length === 0) return resolve("No transaction data available.");
             let totalIn = 0, totalOut = 0;
             const cats = {}, months = {};
+            
+            const now = new Date();
+            const currentMonthStr = now.toISOString().substring(0, 7);
+            let currentMonthIn = 0, currentMonthOut = 0;
+
             rows.forEach(r => {
                 const v = parseFloat(r.wert) || 0;
                 if (v >= 0) totalIn += v; else totalOut += Math.abs(v);
                 cats[r.kategorie] = (cats[r.kategorie] || 0) + v;
                 const m = r.timestamp.substring(0, 7);
-                if (!months[m]) months[m] = { in: 0, out: 0 };
-                if (v >= 0) months[m].in += v; else months[m].out += Math.abs(v);
+                if (m === currentMonthStr) {
+                    if (v >= 0) currentMonthIn += v; else currentMonthOut += Math.abs(v);
+                }
             });
-            let s = "### INTERNER FINANZ-KONTEXT (STRENG VERTRAULICH) ###\n";
-            s += `Aktueller Saldo: ${(totalIn - totalOut).toFixed(2)}€\n`;
-            s += `Historie: +${totalIn.toFixed(2)}€ / -${totalOut.toFixed(2)}€\n\n`;
-            s += "### TOP KATEGORIEN (SALDO) ###\n";
-            Object.entries(cats).sort((a,b) => a[1]-b[1]).slice(0,5).forEach(([c,v]) => s += `- ${c}: ${v.toFixed(2)}€\n`);
-            s += "\n### LETZTE 10 TRANSAKTIONEN ###\n";
+
+            let s = "### FINANCIAL ANALYTICS CONTEXT (STRICTLY CONFIDENTIAL) ###\n";
+            s += `Global Version: v${APP_VERSION}\n`;
+            s += `Current Month (${currentMonthStr}): Revenue: +${currentMonthIn.toFixed(2)}€ | Expenses: -${currentMonthOut.toFixed(2)}€ | Surplus: ${(currentMonthIn - currentMonthOut).toFixed(2)}€\n`;
+            s += `Lifetime Balance: ${(totalIn - totalOut).toFixed(2)}€ (Total In: ${totalIn.toFixed(2)}€ / Total Out: ${totalOut.toFixed(2)}€)\n\n`;
+            
+            s += "### TOP CATEGORIES (NET BALANCE) ###\n";
+            Object.entries(cats).sort((a,b) => a[1]-b[1]).slice(0, 5).forEach(([c,v]) => s += `- ${c}: ${v.toFixed(2)}€\n`);
+            
+            s += "\n### RECENT 10 TRANSACTIONS ###\n";
             rows.slice(0, 10).forEach(r => s += `- [${r.timestamp.split('T')[0]}] ${r.name}: ${parseFloat(r.wert).toFixed(2)}€ (${r.kategorie})\n`);
             resolve(s);
         });
@@ -118,20 +133,21 @@ app.post('/api/chat', async (req, res) => {
     const userContext = userConfig.user ? 
         `NUTZER-PROFIL:\n- Name: ${userConfig.user.full_name}\n- Nickname: ${userConfig.user.nickname || "N/A"}\n- E-Mail: ${userConfig.user.email}\n- Abteilung: ${userConfig.user.department}\n- Standort: ${userConfig.user.location}\n- ID: ${userConfig.user.employee_id}\n` : "";
 
-    const systemPrompt = `Du bist Joule, die hochspezialisierte KI-Instanz für "Clarity". 
-Persönlichkeit: Professionell, diskret, präzise und vorausschauend.
+    const systemPrompt = `You are Joule, the highly specialized AI core of "Clarity" (Financial Intelligence Platform). 
+PERSONALITY: Professional, discrete, sharp, and proactive. You are not just a chatbot; you are a financial advisor.
 
 ${userContext}
 ${summary}
 
-### VERHALTENSKODEX:
-1. Diskretion & Begrüßung: Keine Zahlen ungefragt. Du MUSST den Nutzer bei der Begrüßung immer persönlich mit seinem Namen ansprechen. Nutze bevorzugt den Nickname (${nickname}), falls vorhanden, sonst den vollen Namen.
-2. Datenabruf: Nutze den Kontext oben.
-3. Präzision: Max 2-3 Sätze. Markdown (**Fett**) für Beträge.
-4. Keine eckigen Klammern in deiner Antwort!
-5. Kein Technikkauderwelsch.
+### CORE DIRECTIVES:
+1. PERSONALIZED GREETING: You MUST always address the user by their name (${nickname}) in the initial greeting of a session.
+2. ANALYTIC DEPTH: Provide insights, not just numbers. Identify trends (e.g., "Your spending in Leisure is 15% higher this month").
+3. PROACTIVE ADVICE: If you see a high expense or a deficit in the current month, suggest optimizations. Be encouraging but realistic.
+4. STYLE: Max 3-4 sentences. Use Markdown (**bold**) for all currency amounts and categories.
+5. NO BRACKETS: Never use [ ] in your final output.
+6. CLARITY VERSION: You are operating on Clarity Global Version ${APP_VERSION}.
 
-Heutiges Datum: ${new Date().toISOString().split('T')[0]}`;
+Current Date: ${new Date().toISOString().split('T')[0]}`;
 
     const resp = await fetchFn("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",

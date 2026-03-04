@@ -1,6 +1,6 @@
 {
-  "name": "sap-praktikum-proxy",
-  "version": "0.2.0",
+  "name": "clarity-financial-tracker",
+  "version": "0.3.2",
   "description": "Minimal proxy for Gemini / Generative Language API",
   "main": "server.js",
   "scripts": {

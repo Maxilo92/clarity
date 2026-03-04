@@ -1,4 +1,4 @@
-# Clarity - Intelligent Financial Tracking by SAP
+# Clarity - Intelligent Financial Tracking
 
 Clarity is a professional financial management platform designed to provide deep insights into your spending habits through real-time analytics and advanced AI integration.
 
@@ -30,7 +30,7 @@ Clarity is a professional financial management platform designed to provide deep
 ## 🛠 Tech Stack
 - **Backend:** Node.js, Express.js
 - **Database:** SQLite3 (Server-side filtering & sorting)
-- **Frontend:** Vanilla JavaScript, HTML5, CSS3 (Modern SAP-inspired design)
+- **Frontend:** Vanilla JavaScript, HTML5, CSS3 (Modern design)
 - **AI Engine:** Groq API (Llama 3.3 models)
 - **Visualization:** Chart.js
 
@@ -46,4 +46,4 @@ Clarity is a professional financial management platform designed to provide deep
 5. **Access:** Open your browser at `http://localhost:3000`.
 
 ---
-*Created as part of the SAP Winter Internship Program 2026.*
+*Clarity Financial Management Platform 2026.*

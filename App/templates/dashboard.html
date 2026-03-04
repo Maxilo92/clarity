@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="../static/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        if (localStorage.getItem('sapAuth') !== 'true') {
+        if (localStorage.getItem('clarityAuth') !== 'true') {
             window.location.href = 'login.html';
         }
     </script>
@@ -20,7 +20,7 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <img src="../assets/pictures/sap_logo.png" alt="SAP" class="sidebar-logo">
+                <img src="../assets/pictures/clarity_logo.png" alt="Clarity" class="sidebar-logo">
             </div>
             <nav>
                 <ul class="menu">
@@ -58,7 +58,10 @@
         <!-- Main Content -->
         <main class="main-content">
             <div class="header">
-                <h1>Clarity Dashboard</h1>
+                <div class="header-left">
+                    <h1>Clarity Dashboard</h1>
+                    <span id="app-version" class="version-tag">v0.0.0</span>
+                </div>
                 <div class="header-right">
                     <div class="search-container">
                         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -191,7 +194,7 @@
             </section>
 
             <footer class="app-footer">
-                <p>&copy; 2026 Clarity - A SAP Financial Tracker</p>
+                <p>&copy; 2026 Clarity - An Intelligent Financial Tracker <span class="footer-version"></span></p>
                 <div class="footer-links">
                     <a href="#">Terms of Service</a>
                     <a href="#">Impressum</a>
