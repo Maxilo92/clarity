@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.8] - 2026-03-04
+### Added
+- **Atomares Onboarding:** Unternehmen und Administrator werden nun in einem einzigen, sicheren Schritt erstellt, um Dateninkonsistenzen zu vermeiden.
+- **Sicheres Passwort-Management:** Passwörter werden ab sofort mit `bcryptjs` verschlüsselt gespeichert.
+- **Vollständige Mandantentrennung:** Physische Trennung der Unternehmensdaten in individuelle `company_<id>.db` Dateien.
+- **Verbesserte Navigation:** Umstellung auf semantische Routen (z. B. `/dashboard` statt `/templates/dashboard.html`).
+- **Erweiterter Zugriffsschutz:** Globaler Auth-Guard und Session-Validierung in der `auth.js`.
+
+## [0.3.4] - 2026-03-04
+### Fixed
+- Korrektur des Favicons: Ein neues, quadratisches Favicon (`favicon.png`) mit transparentem Padding wurde erstellt, um Verzerrungen im Browser-Tab zu vermeiden.
+
 ## [0.3.7] - 2026-03-04
 ### Fixed
 - Korrektur der Logo-Darstellung: Alle Logos in der Sidebar, im Login-Bereich, in der Hero-Section und auf der 404-Seite wurden "entstaucht" (Verwendung von `object-fit: contain` und `height: auto`), um das ursprüngliche Seitenverhältnis beizubehalten.

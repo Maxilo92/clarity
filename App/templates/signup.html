@@ -44,7 +44,7 @@
 <body class="login-body" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #f6f8fb 0%, #e9eef5 100%);">
 	<div class="signup-card">
         <div style="text-align: center; margin-bottom: 35px;">
-            <img src="../assets/pictures/clarity_logo.png" alt="Clarity" style="max-height: 60px; width: auto; object-fit: contain; margin-bottom: 15px;">
+            <img src="../assets/pictures/clarity_logo.png" alt="Clarity" style="max-height: 60px; margin-bottom: 15px;">
             <h1 id="signupTitle" style="font-size: 1.75rem; color: #0f172a; letter-spacing: -0.025em;">Join Clarity</h1>
             <p id="signupSubtitle" style="color: #64748b; font-size: 1rem;">Welcome to the financial tracker.</p>
         </div>
@@ -98,7 +98,7 @@
         <div style="margin-top: 30px; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 20px;">
             <p style="font-size: 0.9rem; color: #64748b;">
                 Need to register a company? <a href="/register-company" style="color: #6f42c1; font-weight: 600; text-decoration: none;">Click here</a><br><br>
-                Already have an account? <a href="/login" style="color: #6f42c1; font-weight: 600; text-decoration: none;">Log in</a>
+                Already registered? <a href="/login" style="color: #6f42c1; font-weight: 600; text-decoration: none;">Log in</a>
             </p>
         </div>
 	</div>
@@ -106,10 +106,12 @@
 	<script>
         const urlParams = new URLSearchParams(window.location.search);
         let companyId = urlParams.get('company_id');
-        let companyName = urlParams.get('domain'); 
+        let companyName = urlParams.get('company_name'); 
+        let domainFromUrl = urlParams.get('domain');
         let currentDomain = "";
         let inviteCode = urlParams.get('invite_code');
         let userRole = 'admin';
+        const isNewCompany = urlParams.get('new_company') === '1';
 
         const inviteSection = document.getElementById('inviteCodeSection');
         const signupForm = document.getElementById('userSignupForm');
@@ -121,7 +123,7 @@
             currentDomain = domainSuffixRaw.toLowerCase().replace(/\s+/g, '-') + (domainSuffixRaw.includes('.') ? '' : '.com');
             document.getElementById('domainSuffix').textContent = `@${currentDomain}`;
             document.getElementById('signupTitle').textContent = `Join ${compName}`;
-            document.getElementById('signupSubtitle').textContent = "Complete your employee profile.";
+            document.getElementById('signupSubtitle').textContent = "Complete your profile.";
             
             loadingState.style.display = 'none';
             inviteSection.style.display = 'none';
@@ -150,7 +152,7 @@
                 loadingState.style.display = 'none';
                 inviteSection.style.display = 'block';
                 inviteError.textContent = err.message;
-                document.getElementById('signupTitle').textContent = "Invalid Invite";
+                document.getElementById('signupTitle').textContent = "Join your Team";
             }
         }
 
@@ -181,11 +183,14 @@
 
         // INITIAL ROUTING
         if (inviteCode) {
+            // Employee join via direct link
             validateCode(inviteCode);
-        } else if (companyId && companyName) {
+        } else if (isNewCompany && companyName && domainFromUrl) {
+            // Admin flow after register-company
             userRole = 'admin';
-            setupRegistration(companyName, companyName);
+            setupRegistration(companyName, domainFromUrl);
         } else {
+            // Default: Ask for code
             document.getElementById('signupTitle').textContent = "Join your Team";
             inviteSection.style.display = 'block';
         }
@@ -200,12 +205,11 @@
             const password = document.getElementById('password').value;
 
             // Check if this is a new company creation (admin flow)
-            const isNewCompany = urlParams.get('new_company') === '1';
             const endpoint = isNewCompany ? '/api/onboarding/admin' : '/api/users/signup';
             
             const payload = isNewCompany ? {
-                company_name: urlParams.get('company_name'),
-                domain: urlParams.get('domain'),
+                company_name: companyName,
+                domain: domainFromUrl,
                 full_name: fullName,
                 email: email,
                 password: password
