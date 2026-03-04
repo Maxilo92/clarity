@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.9] - 2026-03-04
+### Fixed
+- **Joule API Kommunikation:** Behebung eines Fehlers, bei dem ungültige Datenfelder (wie Anhänge) an die KI-Schnittstelle gesendet wurden, was zum Abbruch des Chats führte.
+- **Fehlermeldungen:** Joule zeigt nun präzisere Fehlermeldungen an, falls die Kommunikation mit dem Server fehlschlägt.
+
 ## [0.3.8] - 2026-03-04
 ### Added
 - **Atomares Onboarding:** Unternehmen und Administrator werden nun in einem einzigen, sicheren Schritt erstellt, um Dateninkonsistenzen zu vermeiden.

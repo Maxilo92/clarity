@@ -309,6 +309,7 @@ Your task is to support users in analyzing their finances and provide advice as 
             attachmentArea.style.display = 'none';
         }
 
+        console.log(`[Joule] Sending message. User: ${userId}, Company: ${companyId}`);
         appendMessage(text || "Analysiere Transaktion...", 'user', currentAttachment, true);
         // We update the content in history to include the technical attachment info for the AI
         chatHistory[chatHistory.length - 1].content = userMsgContent;
@@ -318,7 +319,10 @@ Your task is to support users in analyzing their finances and provide advice as 
         let typingEl = showTyping();
 
         async function getAIResponse(history) {
-            const chatMessages = [{ role: 'system', content: SYSTEM_PROMPT }].concat(history);
+            // SECURITY: Only send role and content to the API, extra fields like 'attachment' cause errors
+            const cleanedHistory = history.map(({ role, content }) => ({ role, content }));
+            const chatMessages = [{ role: 'system', content: SYSTEM_PROMPT }].concat(cleanedHistory);
+            
             try {
                 const response = await fetch(API_PROXY, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -326,9 +330,10 @@ Your task is to support users in analyzing their finances and provide advice as 
                 });
                 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error("API Error:", response.status, errorText);
-                    throw new Error("Fehler bei der Kommunikation mit dem Server.");
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMsg = errorData.error?.message || errorData.error || "Fehler bei der Kommunikation mit dem Server.";
+                    console.error("API Error:", response.status, errorData);
+                    throw new Error(errorMsg);
                 }
 
                 const result = await response.json();
@@ -395,7 +400,8 @@ Your task is to support users in analyzing their finances and provide advice as 
         } catch (err) {
             console.error(err);
             if (typingEl) typingEl.remove();
-            appendMessage('Fehler bei der Kommunikation.', 'assistant', null, true);
+            const msg = err.message || 'Fehler bei der Kommunikation.';
+            appendMessage(msg, 'assistant', null, true);
         } finally { sendBtn.disabled = false; }
     }
 })();

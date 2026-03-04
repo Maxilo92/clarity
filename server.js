@@ -57,6 +57,10 @@ function getCompanyDb(companyId) {
 }
 
 app.use(express.json());
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
 app.use('/static',    express.static(path.join(APP_DIR, 'static')));
 app.use('/assets',    express.static(path.join(APP_DIR, 'assets')));
 
@@ -366,8 +370,10 @@ app.post('/api/transactions', (req, res) => {
 
 app.post('/api/chat', async (req, res) => {
     const { company_id, user_id, messages } = req.body;
+    console.log(`[CHAT] Request from user_id: ${user_id}, company_id: ${company_id}`);
     
     if (!company_id || !user_id) {
+        console.warn(`[CHAT] Rejected: Missing IDs. user_id=${user_id}, company_id=${company_id}`);
         return res.status(400).json({ error: "Missing company_id or user_id in chat request." });
     }
 
@@ -376,7 +382,10 @@ app.post('/api/chat', async (req, res) => {
         const summary = await getDatabaseSummary(company_id, user_id);
         
         cDb.get("SELECT users.full_name, user_settings.nickname FROM users LEFT JOIN user_settings ON users.id = user_settings.user_id WHERE users.id = ?", [user_id], async (err, row) => {
-            if (err) return res.status(500).json({ error: "User lookup failed." });
+            if (err) {
+                console.error("[CHAT] User lookup error:", err);
+                return res.status(500).json({ error: "User lookup failed." });
+            }
             
             // Default nickname is first name from full_name
             let nickname = "User";
@@ -387,6 +396,7 @@ app.post('/api/chat', async (req, res) => {
                     nickname = row.full_name.split(' ')[0];
                 }
             }
+            console.log(`[CHAT] User nickname identified: ${nickname}`);
 
             const systemPrompt = `You are Joule, an intelligent financial advisor for "Clarity". 
 Addressing user as ${nickname}. 
@@ -397,20 +407,28 @@ ${summary}
 Keep it professional and helpful.`;
 
             try {
+                console.log(`[CHAT] Sending request to Groq API...`);
                 const resp = await fetchFn("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + process.env.GROQ_API_KEY },
                     body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role:"system", content:systemPrompt}, ...messages] })
                 });
+                
                 const data = await resp.json();
+                if (!resp.ok) {
+                    console.error("[CHAT] Groq API returned error:", data);
+                    return res.status(resp.status).json(data);
+                }
+                
+                console.log(`[CHAT] Groq response received successfully.`);
                 res.json(data);
             } catch (fetchErr) {
-                console.error("Groq API error:", fetchErr);
+                console.error("[CHAT] Groq fetch error:", fetchErr);
                 res.status(500).json({ error: "AI service communication failed." });
             }
         });
     } catch(e) {
-        console.error("Chat route error:", e);
+        console.error("[CHAT] Route error:", e);
         res.status(500).json({ error: e.message });
     }
 });
