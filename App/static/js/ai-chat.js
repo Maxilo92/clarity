@@ -87,7 +87,6 @@ Available keywords: QUERY, ADD_TRANSACTION.`;
     const removeAttachment = document.getElementById('aiChatRemoveAttachment');
 
     function saveHistory() { 
-        // Only save real user/assistant messages, filter out internal technical context
         const persistentHistory = chatHistory.filter(m => 
             !m.content.includes("ERGEBNIS DER RECHERCHE") && 
             !m.content.includes("AKTION ERFOLGREICH") &&
@@ -110,6 +109,9 @@ Available keywords: QUERY, ADD_TRANSACTION.`;
         isPanelOpen = false; 
     }
 
+    if (closeBtn) closeBtn.addEventListener('click', closeChat);
+    if (overlay) overlay.addEventListener('click', closeChat);
+
     function toggleNotificationDot(show) {
         const btn = document.querySelector('.diamond-btn');
         if (btn) btn.classList.toggle('has-notification', show);
@@ -119,8 +121,14 @@ Available keywords: QUERY, ADD_TRANSACTION.`;
         helpBubbleClose.onclick = (e) => { e.stopPropagation(); helpBubble.style.display = 'none'; isBubbleDismissed = true; };
     }
 
-    overlay.onclick = closeChat;
-    
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        if (isBubbleDismissed) return;
+        inactivityTimer = setTimeout(() => {
+            if (!isPanelOpen && helpBubble) helpBubble.classList.add('visible');
+        }, 30000);
+    }
+
     clearBtn.onclick = () => {
         if (confirm("Chat-Verlauf wirklich löschen?")) {
             chatHistory = [];
@@ -156,26 +164,25 @@ Available keywords: QUERY, ADD_TRANSACTION.`;
     function appendMessage(text, role, attachment = null, save = true) {
         if (!text && !attachment) return false;
 
-        // TECHNICAL FILTER: Do not show research results or tool calls to user
-        if (text.includes("ERGEBNIS DER RECHERCHE") || text.includes("AKTION ERFOLGREICH") || text.includes("QUERY:") || text.includes("ADD_TRANSACTION:")) {
-            if (save) {
-                chatHistory.push({ role, content: text, attachment });
-                // We don't call saveHistory here because it would filter these out anyway
-            }
-            return true; // Pretend it was appended so logic continues
-        }
-
+        // Visual Cleaning: Remove all technical content but keep the message
         let cleanText = text
             .replace(/\[ANGEHÄNGTE TRANSAKTION:[\s\S]*?\]/gi, '')
             .replace(/QUERY:[\s\n]*\{[\s\S]*?\}/gi, '')
             .replace(/ADD_TRANSACTION:[\s\n]*\{[\s\S]*?\}/gi, '')
             .replace(/\{[^{}]*?"(date|category|name|wert|sender|empfaenger|company_id|user_id)"[^{}]*?\}/gi, '')
+            .replace(/ERGEBNIS DER RECHERCHE:[\s\S]*/gi, '')
+            .replace(/AKTION ERFOLGREICH:[\s\S]*/gi, '')
             .replace(/\bQUERY\b/g, '')
             .replace(/\bADD_TRANSACTION\b/g, '')
             .trim();
         
         cleanText = cleanText.replace(/^\s+|\s+$/g, '');
-        if (!cleanText && role === 'assistant' && !attachment) return false; 
+        
+        // Don't show empty technical bubbles to user
+        if (!cleanText && !attachment && role === 'assistant') {
+            if (save) chatHistory.push({ role, content: text, attachment });
+            return true;
+        }
 
         const wrapper = document.createElement('div');
         wrapper.className = 'ai-message ai-message--' + (role === 'assistant' ? 'bot' : 'user');
@@ -217,12 +224,7 @@ Available keywords: QUERY, ADD_TRANSACTION.`;
         appendMessage("Hallo! Ich bin Joule. Wie kann ich dir heute helfen?", "assistant", null, true);
     } else {
         messagesContainer.innerHTML = "";
-        // Render only visible messages from history
-        chatHistory.forEach(m => {
-            if (!m.content.includes("ERGEBNIS DER RECHERCHE") && !m.content.includes("AKTION ERFOLGREICH")) {
-                appendMessage(m.content, m.role, m.attachment, false);
-            }
-        });
+        chatHistory.forEach(m => appendMessage(m.content, m.role, m.attachment, false));
     }
 
     function showTyping() {
@@ -293,39 +295,48 @@ Available keywords: QUERY, ADD_TRANSACTION.`;
                 const aM = cleanReply.match(/ADD_TRANSACTION:\s*(\{[\s\S]*?\})/);
                 
                 if (qM) {
-                    const criteria = JSON.parse(qM[1]);
-                    const forceData = {};
-                    if (criteria.category) forceData.category = criteria.category;
-                    if (criteria.date) forceData.date = (criteria.date === 'all' ? '' : criteria.date);
-                    if (criteria.name) forceData.search = (criteria.name === 'all' ? '' : criteria.name);
-                    document.dispatchEvent(new CustomEvent('forceFilter', { detail: forceData }));
+                    try {
+                        const criteria = JSON.parse(qM[1]);
+                        const forceData = {};
+                        if (criteria.category) forceData.category = criteria.category;
+                        if (criteria.date) forceData.date = (criteria.date === 'all' ? '' : criteria.date);
+                        if (criteria.name) forceData.search = (criteria.name === 'all' ? '' : criteria.name);
+                        document.dispatchEvent(new CustomEvent('forceFilter', { detail: forceData }));
 
-                    let url = `/api/transactions?limit=20&company_id=${companyId}&user_id=${userId}`;
-                    if (criteria.category && criteria.category !== 'all') url += `&category=${encodeURIComponent(criteria.category)}`;
-                    if (criteria.name && criteria.name !== 'all') url += `&search=${encodeURIComponent(criteria.name)}`;
-                    if (criteria.date && criteria.date !== 'all') url += `&date=${encodeURIComponent(criteria.date)}`;
-                    
-                    const res = await fetch(url);
-                    const data = await res.json();
-                    const results = data.eintraege || [];
-                    const resultMsg = `ERGEBNIS DER RECHERCHE: ` + (results.length > 0 ? `Gefunden: ` + results.map(t => `${t.name} (${t.wert}€)`).join(', ') : `Keine Einträge gefunden.`);
-                    
-                    // Internal pushes, not rendered to user
-                    chatHistory.push({ role: 'assistant', content: reply });
-                    chatHistory.push({ role: 'system', content: resultMsg });
-                    reply = await getAIResponse(chatHistory);
+                        let url = `/api/transactions?limit=20&company_id=${companyId}&user_id=${userId}`;
+                        if (criteria.category && criteria.category !== 'all') url += `&category=${encodeURIComponent(criteria.category)}`;
+                        if (criteria.name && criteria.name !== 'all') url += `&search=${encodeURIComponent(criteria.name)}`;
+                        if (criteria.date && criteria.date !== 'all') url += `&date=${encodeURIComponent(criteria.date)}`;
+                        
+                        const res = await fetch(url);
+                        const data = await res.json();
+                        const results = data.eintraege || [];
+                        const resultMsg = `ERGEBNIS DER RECHERCHE: ` + (results.length > 0 ? `Gefunden: ` + results.map(t => `${t.name} (${t.wert}€)`).join(', ') : `Keine Einträge gefunden.`);
+                        
+                        chatHistory.push({ role: 'assistant', content: reply });
+                        chatHistory.push({ role: 'system', content: resultMsg });
+                        reply = await getAIResponse(chatHistory);
+                    } catch (jsonErr) {
+                        console.error("[Joule] Malformed QUERY JSON:", qM[1], jsonErr);
+                        break;
+                    }
                 } 
                 else if (aM) {
-                    const payload = JSON.parse(aM[1]);
-                    payload.company_id = companyId;
-                    payload.user_id = userId;
-                    const response = await fetch('/api/transactions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (response.ok) {
-                        document.dispatchEvent(new Event('dataUpdated'));
-                        chatHistory.push({ role: 'assistant', content: reply });
-                        chatHistory.push({ role: 'system', content: "AKTION ERFOLGREICH: Die Transaktion wurde gespeichert." });
-                        reply = await getAIResponse(chatHistory);
-                    } else break;
+                    try {
+                        const payload = JSON.parse(aM[1]);
+                        payload.company_id = companyId;
+                        payload.user_id = userId;
+                        const response = await fetch('/api/transactions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        if (response.ok) {
+                            document.dispatchEvent(new Event('dataUpdated'));
+                            chatHistory.push({ role: 'assistant', content: reply });
+                            chatHistory.push({ role: 'system', content: "AKTION ERFOLGREICH: Die Transaktion wurde gespeichert." });
+                            reply = await getAIResponse(chatHistory);
+                        } else break;
+                    } catch (jsonErr) {
+                        console.error("[Joule] Malformed ADD_TRANSACTION JSON:", aM[1], jsonErr);
+                        break;
+                    }
                 }
                 else break;
             }

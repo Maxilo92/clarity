@@ -1,6 +1,6 @@
 (function() {
     function init() {
-        console.log("Transactions JS - Modal centering and functionality");
+        console.log("[Transactions] Initializing list and filters...");
         const tableBody = document.querySelector('.transactions-table tbody');
         const tableEl = document.querySelector('.transactions-table');
         const modal = document.getElementById('transactionModal');
@@ -13,8 +13,6 @@
         const cmEdit = document.getElementById('cmEdit');
         const cmDelete = document.getElementById('cmDelete');
         const searchInput = document.getElementById('globalSearch');
-
-        const OWN_COMPANY = "Clarity";
 
         let selectedTransactionId = null;
         let currentCategoryFilter = 'all';
@@ -49,18 +47,21 @@
             let userIdQuery = '';
             let companyIdQuery = '';
             if (userStr) {
-                const user = JSON.parse(userStr);
-                if (user.id) userIdQuery = `&user_id=${user.id}`;
-                if (user.company_id) companyIdQuery = `&company_id=${user.company_id}`;
+                try {
+                    const user = JSON.parse(userStr);
+                    if (user.id) userIdQuery = `&user_id=${user.id}`;
+                    if (user.company_id) companyIdQuery = `&company_id=${user.company_id}`;
+                } catch(e) {}
             }
 
             let url = `/api/transactions?limit=${PAGE_SIZE}&offset=${currentOffset}${userIdQuery}${companyIdQuery}`;
             if (currentCategoryFilter !== 'all') url += `&category=${encodeURIComponent(currentCategoryFilter)}`;
             if (currentSearchQuery) url += `&search=${encodeURIComponent(currentSearchQuery)}`;
-            if (currentPriceFilter) url += `&price=${encodeURIComponent(currentPriceFilter)}`;
             if (currentDateFilter) url += `&date=${encodeURIComponent(currentDateFilter)}`;
             if (currentIdFilter) url += `&id=${encodeURIComponent(currentIdFilter)}`;
             url += `&sort=${currentSortColumn}&order=${currentSortOrder}`;
+
+            console.log(`[Transactions] Fetching: ${url}`);
 
             fetch(url)
                 .then(res => res.json())
@@ -81,8 +82,8 @@
         }
 
         function syncSearchActiveClass() {
-            const hasActiveFilter = !!(currentSearchQuery || currentIdFilter || currentDateFilter || (currentCategoryFilter !== 'all'));
-            document.body.classList.toggle('search-active', hasActiveFilter);
+            const isSearching = !!(currentSearchQuery || currentIdFilter || currentDateFilter);
+            document.body.classList.toggle('search-active', isSearching);
         }
 
         function updateHeaderTags() {
@@ -104,7 +105,6 @@
             const cSearch = document.getElementById('clearSearchFilter'); if (cSearch) cSearch.onclick = (e) => { 
                 e.stopPropagation(); 
                 currentSearchQuery = ''; 
-                currentPriceFilter = '';
                 currentDateFilter = '';
                 currentIdFilter = ''; 
                 if(searchInput) searchInput.value = ''; 
@@ -143,20 +143,17 @@
             searchInput.addEventListener('input', (e) => {
                 const val = e.target.value.trim();
                 
-                // If searching, clear category filter to search across all categories
                 if (val && currentCategoryFilter !== 'all') {
                     currentCategoryFilter = 'all';
                     updateHeaderTags();
                     document.dispatchEvent(new CustomEvent('categoryChanged', { detail: { category: 'all' } }));
                 }
 
-                // Toggle search-active class to hide chart and expand list area
                 document.body.classList.toggle('search-active', !!val);
 
                 if (clearSearchBtn) clearSearchBtn.style.display = val ? 'block' : 'none';
                 if (!val || val === '-' || val === '+') {
                     currentSearchQuery = '';
-                    currentPriceFilter = '';
                     currentDateFilter = '';
                     document.body.classList.remove('search-active');
                     loadTransactions(false);
@@ -164,11 +161,7 @@
                 }
                 clearTimeout(timeout);
                 timeout = setTimeout(() => { 
-                    // Improved date detection (e.g., 2026-02-19 or 19.02.2026)
                     const datePattern = /^(\d{4}-\d{2}-\d{2})|(\d{2}\.\d{2}\.\d{4})$/;
-                    // Price detection (e.g., 12, 12.50, -5, 10€)
-                    const pricePattern = /^-?\d+([.,]\d{1,2})?€?$/;
-
                     if (datePattern.test(val)) {
                         let dateVal = val;
                         if (val.includes('.')) {
@@ -177,19 +170,11 @@
                         }
                         currentDateFilter = dateVal;
                         currentSearchQuery = '';
-                    } else if (pricePattern.test(val)) {
-                        // Always show the original input as the search query tag for clarity
-                        currentSearchQuery = val;
                     } else {
-                        currentSearchQuery = val;
+                        currentSearchQuery = val.replace(',', '.').replace('€', '');
                     }
                     
-                    // Always clear other filters when a new search starts
-                    if (currentSearchQuery) {
-                        currentDateFilter = '';
-                        currentPriceFilter = ''; // We don't use this anymore as search covers it
-                    }
-                    
+                    if (currentSearchQuery) currentDateFilter = '';
                     loadTransactions(false); 
                 }, 300);
             });
@@ -199,7 +184,6 @@
                     searchInput.value = '';
                     clearSearchBtn.style.display = 'none';
                     currentSearchQuery = '';
-                    currentPriceFilter = '';
                     currentDateFilter = '';
                     document.body.classList.remove('search-active');
                     loadTransactions(false);
@@ -230,8 +214,6 @@
                             contextMenu.style.display = 'block';
                             contextMenu.style.left = ev.clientX + 'px';
                             contextMenu.style.top = ev.clientY + 'px';
-                            
-                            // Simple collision check only if it goes off bottom
                             const vHeight = window.innerHeight;
                             const menuHeight = contextMenu.offsetHeight;
                             if (ev.clientY + menuHeight > vHeight) {
@@ -278,22 +260,15 @@
         form.onsubmit = (e) => {
             e.preventDefault(); const editId = form.dataset.editId; let wert = parseFloat(document.getElementById('tWert').value);
             if (document.getElementById('tType').value === 'expense') wert = -Math.abs(wert);
-            
             const userStr = localStorage.getItem('clarityUser');
-            let userId = null;
-            let companyId = null;
-            if (userStr) {
-                const user = JSON.parse(userStr);
-                userId = user.id;
-                companyId = user.company_id;
-            }
+            let userId = null; let companyId = null;
+            if (userStr) { const user = JSON.parse(userStr); userId = user.id; companyId = user.company_id; }
 
             const payload = {
                 name: document.getElementById('tName').value, kategorie: document.getElementById('tKategorie').value,
                 wert: wert, sender: document.getElementById('tSender').value, empfaenger: document.getElementById('tEmpfaenger').value,
                 timestamp: new Date(document.getElementById('tDate').value).toISOString(),
-                user_id: userId,
-                company_id: companyId
+                user_id: userId, company_id: companyId
             };
             fetch(editId ? '/api/transactions/' + editId : '/api/transactions', {
                 method: editId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -305,31 +280,18 @@
 
         loadTransactions();
         document.addEventListener('forceFilter', (e) => {
+            console.log("[Transactions] Force filter event received:", e.detail);
             const { category, date, search, id } = e.detail;
-            
             if (id !== undefined) {
                 currentIdFilter = id;
-                // When focusing on a specific ID, clear other restrictive filters
-                if (id) {
-                    currentCategoryFilter = 'all';
-                    currentDateFilter = '';
-                    currentSearchQuery = '';
-                    if (searchInput) searchInput.value = '';
-                }
+                if (id) { currentCategoryFilter = 'all'; currentDateFilter = ''; currentSearchQuery = ''; if (searchInput) searchInput.value = ''; }
             } else {
-                // If no ID, use other filters normally
                 if (category !== undefined) currentCategoryFilter = category;
                 if (date !== undefined) currentDateFilter = date;
-                if (search !== undefined) { 
-                    currentSearchQuery = search; 
-                    if (searchInput) searchInput.value = search; 
-                }
-                currentIdFilter = ''; // Clear ID filter if we're doing a general filter
+                if (search !== undefined) { currentSearchQuery = search; if (searchInput) searchInput.value = search; }
+                currentIdFilter = ''; 
             }
-
-            // Sync UI layout with search state
-            document.body.classList.toggle('search-active', !!(currentSearchQuery || currentIdFilter || currentDateFilter || (currentCategoryFilter !== 'all')));
-
+            syncSearchActiveClass();
             loadTransactions(false);
             document.dispatchEvent(new CustomEvent('categoryChanged', { detail: { category: currentCategoryFilter } }));
         });

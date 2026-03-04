@@ -15,6 +15,19 @@
                     customRange.style.display = 'flex';
                 } else {
                     customRange.style.display = 'none';
+                    
+                    // Sync transaction list with the chart timeframe
+                    const timeframe = timeframeSelect.value;
+                    const datePrefix = (timeframe === 'month') ? new Date().toISOString().substring(0, 7) : 
+                                     (timeframe === 'year') ? new Date().toISOString().substring(0, 4) : 
+                                     (timeframe === 'last_year') ? (new Date().getFullYear() - 1).toString() : '';
+                    
+                    if (datePrefix) {
+                        document.dispatchEvent(new CustomEvent('forceFilter', { 
+                            detail: { date: datePrefix, category: currentCategory } 
+                        }));
+                    }
+                    
                     updateDashboard();
                 }
             });
