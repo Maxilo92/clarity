@@ -21,6 +21,50 @@
             vertical-align: middle;
             border: 1px solid #e2e8f0;
         }
+        .danger-zone-card {
+            border: 2px solid #fee2e2;
+            background: #fffafb;
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 40px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .danger-zone-card:hover {
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.05);
+        }
+        .danger-header {
+            color: #991b1b;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .danger-action-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #fee2e2;
+            margin-top: 15px;
+        }
+        .delete-btn {
+            background-color: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .delete-btn:hover {
+            background-color: #b91c1c;
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+        }
     </style>
 </head>
 <body data-require-auth="true">
@@ -90,13 +134,13 @@
                         <h3>User Profile</h3>
                         <div class="settings-row">
                             <div class="settings-info">
-                                <label>Name</label>
+                                <label>Full Name</label>
                                 <p id="profileName">Loading...</p>
                             </div>
                         </div>
                         <div class="settings-row">
                             <div class="settings-info">
-                                <label>Email</label>
+                                <label>Email Address</label>
                                 <p id="profileEmail">Loading...</p>
                             </div>
                         </div>
@@ -108,7 +152,7 @@
                         </div>
                         <div class="settings-row">
                             <div class="settings-info">
-                                <label>Role</label>
+                                <label>Account Role</label>
                                 <p id="profileRole">Loading...</p>
                             </div>
                         </div>
@@ -120,23 +164,11 @@
                         <div class="settings-row">
                             <div class="settings-info">
                                 <label>Email Notifications</label>
-                                <p>Receive weekly reports and transaction alerts via email.</p>
+                                <p>Weekly financial summaries and security alerts.</p>
                             </div>
                             <div class="settings-control">
                                 <label class="switch">
                                     <input type="checkbox" checked disabled>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="settings-row">
-                            <div class="settings-info">
-                                <label>Desktop Notifications</label>
-                                <p>Show browser notifications for real-time dashboard updates.</p>
-                            </div>
-                            <div class="settings-control">
-                                <label class="switch">
-                                    <input type="checkbox" disabled>
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -148,50 +180,35 @@
                         <h3>AI Assistant (Joule)</h3>
                         <div class="settings-row">
                             <div class="settings-info">
-                                <label>Wie soll Joule dich nennen?</label>
-                                <p>Passe die Anrede deines KI-Assistenten an.</p>
+                                <label>Preferred Nickname</label>
+                                <p>How should Joule address you in chat?</p>
                             </div>
                             <div class="settings-control">
-                                <input type="text" id="jouleNickname" class="settings-input" placeholder="z.B. Max" style="border: 1px solid #ddd; padding: 8px; border-radius: 6px;">
+                                <input type="text" id="jouleNickname" class="settings-input" placeholder="e.g. Max" style="border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; width: 200px;">
                             </div>
                         </div>
                     </section>
 
-                    <!-- Security -->
-                    <section class="settings-section">
-                        <h3>Security <span class="demo-badge">Demo</span></h3>
-                        <div class="settings-row">
-                            <div class="settings-info">
-                                <label>Password</label>
-                                <p>Manage your login credentials.</p>
-                            </div>
-                            <div class="settings-control">
-                                <button class="save-btn" disabled style="opacity: 0.6; cursor: not-allowed;">Change Password</button>
-                            </div>
+                    <!-- Danger Zone -->
+                    <section class="danger-zone-card">
+                        <div class="danger-header">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                            <h3 style="margin: 0; font-size: 1.2rem;">Danger Zone</h3>
                         </div>
-                    </section>
-
-                    <!-- Account Deletion -->
-                    <section class="settings-section danger-zone-box" style="border: 2px solid #fee2e2; background: #fffafb; border-radius: 16px; padding: 25px; margin-top: 40px; position: relative; overflow: hidden;">
-                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #dc2626;"></div>
-                        <h3 style="color: #991b1b; margin-top: 0; display: flex; align-items: center; gap: 10px;">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                            Danger Zone
-                        </h3>
-                        <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 20px;">
-                            Once you delete your account, there is no going back. All your personal settings and data associations will be permanently removed from your organization's records.
+                        <p style="color: #64748b; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px;">
+                            Deleting your account is permanent. This will remove your personal settings and dissociate your identity from this organization. If you are the last administrator, you must promote another member first.
                         </p>
-                        <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 12px; border: 1px solid #fee2e2;">
+                        <div class="danger-action-box">
                             <div>
-                                <strong style="display: block; color: #1e293b; font-size: 0.95rem;">Permanently delete account</strong>
-                                <span style="font-size: 0.85em; color: #94a3b8;">This action is irreversible.</span>
+                                <strong style="display: block; color: #1e293b; font-size: 1rem;">Delete this account</strong>
+                                <span style="font-size: 0.85em; color: #94a3b8;">This action cannot be undone.</span>
                             </div>
-                            <button class="save-btn" id="btnDeleteAccount" style="background-color: #dc2626; padding: 10px 20px; font-weight: bold; border-radius: 8px;">Delete Account</button>
+                            <button class="delete-btn" id="btnDeleteAccount">Delete Account</button>
                         </div>
                     </section>
 
-                    <div style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
-                        <button class="save-btn" id="saveAllSettings" style="width: 100%; padding: 14px; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(111, 66, 193, 0.2);">Save All Changes</button>
+                    <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 25px;">
+                        <button class="save-btn" id="saveAllSettings" style="width: 100%; padding: 16px; font-size: 1.1rem; border-radius: 12px; background: #6f42c1; box-shadow: 0 4px 15px rgba(111, 66, 193, 0.2);">Save Changes</button>
                     </div>
                 </div>
 			</div>
@@ -210,7 +227,6 @@
     <script src="../static/js/ai-chat.js"></script>
     <script src="../static/js/settings-search.js"></script>
     <script>
-        // Fill profile data from localStorage
         const userStr = localStorage.getItem('clarityUser');
         let currentUser = null;
         if (userStr) {
@@ -220,22 +236,19 @@
                 document.getElementById('profileEmail').textContent = currentUser.email || 'N/A';
                 document.getElementById('profileOrg').textContent = currentUser.company_name || 'Independent';
                 document.getElementById('profileRole').textContent = (currentUser.role || 'user').toUpperCase();
-            } catch(e) { console.error("Error parsing user data", e); }
+            } catch(e) { console.error("User data error", e); }
         }
 
-        // Load existing AI config (User-Specific)
+        // Load config
         if (currentUser) {
             fetch(`/api/config?user_id=${currentUser.id}&company_id=${currentUser.company_id}`)
                 .then(res => res.json())
                 .then(config => {
-                    if (config.nickname) {
-                        document.getElementById('jouleNickname').value = config.nickname;
-                    }
-                })
-                .catch(err => console.error("Error loading config:", err));
+                    if (config.nickname) document.getElementById('jouleNickname').value = config.nickname;
+                });
         }
 
-        // Save nickname on button click
+        // Save config
         document.getElementById('saveAllSettings').onclick = function() {
             if (!currentUser) return;
             const nickname = document.getElementById('jouleNickname').value.trim();
@@ -250,47 +263,29 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    alert('Settings updated! Joule will address you as ' + (nickname || 'Nutzer') + ' from now on.');
-                }
-            })
-            .catch(err => {
-                console.error("Error saving config:", err);
-                alert('Error saving settings.');
+                if (data.success) alert('Settings saved successfully!');
             });
         };
 
-        // Delete Account Logic
+        // Delete Account
         document.getElementById('btnDeleteAccount').onclick = async function() {
             if (!currentUser) return;
-
-            const confirmation = confirm("WARNING: Are you absolutely sure you want to delete your account? This action cannot be undone.");
-            if (!confirmation) return;
-
-            const finalCheck = prompt("Please type 'DELETE' to confirm account removal:");
-            if (finalCheck !== 'DELETE') return;
+            if (!confirm("Are you SURE you want to delete your account? This is permanent.")) return;
+            
+            const check = prompt("Please type 'DELETE' to confirm:");
+            if (check !== 'DELETE') return;
 
             try {
                 const res = await fetch(`/api/users/${currentUser.id}?company_id=${currentUser.company_id}`, { method: 'DELETE' });
                 const data = await res.json();
-
                 if (res.ok) {
-                    alert("Account deleted successfully.");
+                    alert("Account deleted.");
                     window.location.href = '/logout';
                 } else {
-                    if (data.error === 'last_admin') {
-                        alert("CANNOT DELETE ACCOUNT: " + data.message);
-                        if (currentUser.role === 'admin') {
-                            window.location.href = '/admin';
-                        }
-                    } else {
-                        alert("Error: " + (data.error || "Could not delete account"));
-                    }
+                    alert(data.message || data.error);
+                    if (data.error === 'last_admin') window.location.href = '/admin';
                 }
-            } catch (err) {
-                console.error(err);
-                alert("Server error.");
-            }
+            } catch (e) { alert("Server error."); }
         };
     </script>
     <button class="diamond-btn" title="Open AI Assistant" aria-label="Open AI Chat">

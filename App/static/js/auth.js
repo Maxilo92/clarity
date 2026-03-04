@@ -2,7 +2,7 @@ const AUTH_KEY = 'clarityAuth';
 const USER_KEY = 'clarityUser';
 
 // IMMEDIATE AUTH GUARD
-(function() {
+(async function() {
     const isAuth = localStorage.getItem(AUTH_KEY) === 'true';
     const path = window.location.pathname;
     
@@ -18,6 +18,25 @@ const USER_KEY = 'clarityUser';
     const isPublic = publicRoutes.some(r => path === r || path.startsWith(r + '.html'));
     const isIndex = path === '/' || path.endsWith('index.html');
 
+    // IF LOGGED IN: Validate session with server to catch DB resets
+    if (isAuth) {
+        const userStr = localStorage.getItem(USER_KEY);
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                // Ping config API to see if user still exists
+                const res = await fetch(`/api/config?user_id=${user.id}&company_id=${user.company_id}`);
+                if (!res.ok) throw new Error("Session invalid");
+            } catch (e) {
+                console.warn("Session stale, logging out...");
+                localStorage.removeItem(AUTH_KEY);
+                localStorage.removeItem(USER_KEY);
+                window.location.href = '/login';
+                return;
+            }
+        }
+    }
+
     // Redirect unauthenticated users to login
     if (!isAuth && !isPublic) {
         window.location.href = '/login';
@@ -25,8 +44,7 @@ const USER_KEY = 'clarityUser';
     }
 
     // Redirect authenticated users away from login/index to dashboard
-    // But allow them to stay on /signup or /register-company (or they might be creating a second org)
-    if (isAuth && (isLoginPage || isIndex)) {
+    if (isAuth && (isPublic || isIndex) && path !== '/logout' && !path.startsWith('/logout')) {
         window.location.href = '/dashboard';
         return;
     }

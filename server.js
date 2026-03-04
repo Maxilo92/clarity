@@ -126,6 +126,8 @@ app.get('/api/companies/domain', (req, res) => {
     if (!name) return res.status(400).json({ error: "Company name required" });
     const domain = name.toLowerCase().replace(/\s+/g, '-') + ".com";
     res.json({ domain });
+});
+
 // --- Multi-User Onboarding & Auth API ---
 
 app.post('/api/onboarding/admin', async (req, res) => {
