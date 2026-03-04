@@ -311,8 +311,25 @@ app.get('/api/users', (req, res) => {
 
 app.put('/api/users/:id', (req, res) => {
     const { company_id, role } = req.body;
+    if (!company_id) return res.status(400).json({ error: "Company ID required" });
     const cDb = getCompanyDb(company_id);
-    cDb.run("UPDATE users SET role = ? WHERE id = ?", [role, req.params.id], () => res.json({ success: true }));
+    const userId = req.params.id;
+
+    // Security check: Don't allow demoting the last admin
+    if (role === 'user') {
+        cDb.get("SELECT role FROM users WHERE id = ?", [userId], (err, user) => {
+            if (user && user.role === 'admin') {
+                cDb.get("SELECT COUNT(*) as cnt FROM users WHERE role = 'admin'", (err, row) => {
+                    if (row.cnt <= 1) return res.status(403).json({ error: "last_admin", message: "Cannot demote the last administrator." });
+                    performUpdate();
+                });
+            } else { performUpdate(); }
+        });
+    } else { performUpdate(); }
+
+    function performUpdate() {
+        cDb.run("UPDATE users SET role = ? WHERE id = ?", [role, userId], () => res.json({ success: true }));
+    }
 });
 
 app.delete('/api/users/:id', (req, res) => {

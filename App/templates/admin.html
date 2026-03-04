@@ -357,12 +357,15 @@
                 }
 
                 container.innerHTML = data.users.map(u => `
-                    <tr data-id="${u.id}" class="employee-row">
+                    <tr data-id="${u.id}" data-role="${u.role}" class="employee-row">
                         <td style="font-weight: 600;">${u.full_name} ${u.id === currentUser.id ? '(You)' : ''}</td>
                         <td>${u.email}</td>
                         <td><span class="status-badge ${u.role === 'admin' ? 'status-active' : 'status-used'}">${u.role.toUpperCase()}</span></td>
                         <td>
-                            ${u.id !== currentUser.id ? `<button class="btn-cancel" onclick="showEmployeeMenu(event, ${u.id})">Manage</button>` : '-'}
+                            ${u.id !== currentUser.id ? `
+                                <button class="btn-icon" onclick="showEmployeeMenu(event, ${u.id}, '${u.role}')" title="Manage Employee">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                </button>` : '-'}
                         </td>
                     </tr>
                 `).join('');
@@ -372,7 +375,7 @@
                     if (parseInt(row.dataset.id) === currentUser.id) return;
                     row.addEventListener('contextmenu', (e) => {
                         e.preventDefault();
-                        showEmployeeMenu(e, row.dataset.id);
+                        showEmployeeMenu(e, row.dataset.id, row.dataset.role);
                     });
                 });
 
@@ -383,10 +386,14 @@
 
         const adminMenu = document.getElementById('adminContextMenu');
         
-        function showEmployeeMenu(e, id) {
+        function showEmployeeMenu(e, id, role) {
             selectedUserId = parseInt(id);
             adminMenu.style.display = 'block';
             
+            // Adjust options based on role
+            document.getElementById('amMakeAdmin').style.display = (role === 'admin') ? 'none' : 'block';
+            document.getElementById('amMakeUser').style.display = (role === 'user') ? 'none' : 'block';
+
             let x = e.clientX;
             let y = e.clientY;
 
@@ -419,9 +426,14 @@
                 const res = await fetch(`/api/users/${selectedUserId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ role: newRole })
+                    body: JSON.stringify({ company_id: currentUser.company_id, role: newRole })
                 });
-                if (res.ok) loadEmployees();
+                const data = await res.json();
+                if (res.ok) {
+                    loadEmployees();
+                } else {
+                    alert(data.message || data.error || "Action failed.");
+                }
             } catch(e) { alert("Action failed."); }
         }
 
