@@ -4,6 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Clarity - Register Company</title>
+	<link rel="icon" type="image/png" href="../assets/pictures/clarity_logo.png">
 	<link rel="stylesheet" href="../static/css/style.css">
     <style>
         .signup-card {
@@ -46,12 +47,12 @@
 	<div class="signup-card">
         <div id="registrationForm">
             <div style="text-align: center; margin-bottom: 35px;">
-                <img src="../assets/pictures/clarity_logo.png" alt="Clarity" style="max-height: 60px; margin-bottom: 15px;">
+                <img src="../assets/pictures/clarity_logo.png" alt="Clarity" style="max-height: 60px; width: auto; object-fit: contain; margin-bottom: 15px;">
                 <h1 style="font-size: 1.75rem; color: #0f172a; letter-spacing: -0.025em;">Onboard your Company</h1>
                 <p style="color: #64748b; font-size: 1rem;">Set up your organizational workspace in seconds.</p>
             </div>
 
-            <form id="companyForm" method="POST">
+            <form id="companyForm" onsubmit="return false;">
                 <div class="form-group">
                     <label for="companyName">Legal Company Name</label>
                     <input type="text" id="companyName" placeholder="e.g. Acme Corporation" required autocomplete="off">
@@ -59,17 +60,17 @@
                         Enter a name to generate your domain...
                     </div>
                 </div>
-                <button type="submit" class="btn-primary">Register & Get Domain</button>
+                <button type="submit" class="btn-primary" id="btnRegister">Prepare Workspace</button>
             </form>
         </div>
 
         <div id="successBox" class="success-box">
-            <div style="font-size: 3rem; margin-bottom: 10px;">✅</div>
-            <h2>Company Registered!</h2>
-            <p style="color: #64748b; margin-bottom: 20px;">Your dedicated business domain is:</p>
+            <div style="font-size: 3rem; margin-bottom: 10px;">🏢</div>
+            <h2>Workspace Prepared!</h2>
+            <p style="color: #64748b; margin-bottom: 20px;">Your dedicated business domain will be:</p>
             <div id="finalDomain" class="domain-tag">domain.com</div>
             <p style="color: #64748b; font-size: 0.9rem; margin-top: 20px; line-height: 1.5;">
-                You can now proceed to create your personal administrator account using this domain.
+                Almost done! Now you need to create your personal administrator account to finish the setup.
             </p>
             <button id="btnContinue" class="btn-primary" style="margin-top: 25px;">Create Admin Account</button>
         </div>
@@ -85,7 +86,6 @@
 
 	<script>
         let currentDomain = "";
-        let currentCompanyId = null;
         let currentCompanyName = "";
 
         const companyInput = document.getElementById('companyName');
@@ -107,36 +107,19 @@
             }
         });
 
-        document.getElementById('companyForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const errorEl = document.getElementById('errorMsg');
+        document.getElementById('btnRegister').onclick = () => {
             const name = companyInput.value.trim();
-            errorEl.textContent = "";
-
-            try {
-                const compRes = await fetch('/api/companies', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: name, domain: currentDomain })
-                });
-                const compData = await compRes.json();
-                if (compData.error) throw new Error(compData.error);
-
-                currentCompanyId = compData.company_id;
-                currentCompanyName = name;
-
-                // Show success
-                document.getElementById('registrationForm').style.display = 'none';
-                document.getElementById('successBox').style.display = 'block';
-                document.getElementById('finalDomain').textContent = currentDomain;
-
-            } catch (err) {
-                errorEl.textContent = err.message;
-            }
-        });
+            if (name.length < 2) return;
+            
+            currentCompanyName = name;
+            // No API call here anymore, just move to "success" state
+            document.getElementById('registrationForm').style.display = 'none';
+            document.getElementById('successBox').style.display = 'block';
+            document.getElementById('finalDomain').textContent = currentDomain;
+        };
 
         document.getElementById('btnContinue').onclick = () => {
-            window.location.href = `/signup?company_id=${currentCompanyId}&domain=${encodeURIComponent(currentCompanyName)}`;
+            window.location.href = `/signup?new_company=1&company_name=${encodeURIComponent(currentCompanyName)}&domain=${encodeURIComponent(currentDomain)}`;
         };
     </script>
 </body>

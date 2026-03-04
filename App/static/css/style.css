@@ -898,6 +898,7 @@ input:checked + .slider:before {
     display: block;
     max-width: 100px;
     height: auto;
+    object-fit: contain;
     margin: 8px 18px;
 }
 

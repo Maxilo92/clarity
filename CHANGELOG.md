@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.7] - 2026-03-04
+### Fixed
+- Korrektur der Logo-Darstellung: Alle Logos in der Sidebar, im Login-Bereich, in der Hero-Section und auf der 404-Seite wurden "entstaucht" (Verwendung von `object-fit: contain` und `height: auto`), um das ursprüngliche Seitenverhältnis beizubehalten.
+
+## [0.3.6] - 2026-03-04
+### Added
+- Implementierung einer modernen, animierten **404-Fehlerseite** im Clarity-Design.
+- Integration des Clarity-Logos als **Favicon** in allen App-Templates.
+- Serverseitige Middleware zur automatischen Auslieferung der 404-Seite bei unbekannten Routen.
+### Changed
+- Optische Überarbeitung der rechtlichen Seiten (TOS, Impressum) mit Glassmorphism-Elementen und Hero-Sections.
+
 ## [0.3.5] - 2026-03-04
 ### Added
 - Implementierung der Seiten "Terms of Service" (`tos.html`) und "Impressum" (`impressum.html`).

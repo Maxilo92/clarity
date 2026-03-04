@@ -4,6 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Clarity - Sign Up</title>
+	<link rel="icon" type="image/png" href="../assets/pictures/clarity_logo.png">
 	<link rel="stylesheet" href="../static/css/style.css">
     <script src="../static/js/auth.js"></script>
     <style>
@@ -43,7 +44,7 @@
 <body class="login-body" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #f6f8fb 0%, #e9eef5 100%);">
 	<div class="signup-card">
         <div style="text-align: center; margin-bottom: 35px;">
-            <img src="../assets/pictures/clarity_logo.png" alt="Clarity" style="max-height: 60px; margin-bottom: 15px;">
+            <img src="../assets/pictures/clarity_logo.png" alt="Clarity" style="max-height: 60px; width: auto; object-fit: contain; margin-bottom: 15px;">
             <h1 id="signupTitle" style="font-size: 1.75rem; color: #0f172a; letter-spacing: -0.025em;">Join Clarity</h1>
             <p id="signupSubtitle" style="color: #64748b; font-size: 1rem;">Welcome to the financial tracker.</p>
         </div>
@@ -198,27 +199,40 @@
             const email = document.getElementById('emailPrefix').value.trim() + "@" + currentDomain;
             const password = document.getElementById('password').value;
 
+            // Check if this is a new company creation (admin flow)
+            const isNewCompany = urlParams.get('new_company') === '1';
+            const endpoint = isNewCompany ? '/api/onboarding/admin' : '/api/users/signup';
+            
+            const payload = isNewCompany ? {
+                company_name: urlParams.get('company_name'),
+                domain: urlParams.get('domain'),
+                full_name: fullName,
+                email: email,
+                password: password
+            } : {
+                full_name: fullName, 
+                email: email, 
+                password: password, 
+                company_id: companyId,
+                role: userRole,
+                invite_code: userRole === 'user' ? inviteCode : null
+            };
+
             try {
-                const userRes = await fetch('/api/users/signup', {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        full_name: fullName, 
-                        email: email, 
-                        password: password, 
-                        company_id: companyId,
-                        role: userRole,
-                        invite_code: userRole === 'user' ? inviteCode : null
-                    })
+                    body: JSON.stringify(payload)
                 });
-                const userData = await userRes.json();
-                if (userData.error) throw new Error(userData.error);
+                const data = await res.json();
+                
+                if (data.error) throw new Error(data.error);
 
                 // Clear any stale auth before going to login
                 localStorage.removeItem('clarityAuth');
                 localStorage.removeItem('clarityUser');
                 
-                alert("Account created successfully! Please log in with your new credentials.");
+                alert("Registration successful! Please log in with your new credentials.");
                 window.location.href = '/login';
 
             } catch (err) {

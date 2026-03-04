@@ -82,15 +82,106 @@ app.get('/templates/:page.html', (req, res) => {
 const APP_VERSION = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version;
 let fetchFn = globalThis.fetch || require('node-fetch');
 
-// --- Multi-User & Auth API ---
+async function getDatabaseSummary(companyId, userId) {
+    if (!companyId) return "No company context available.";
+    return new Promise((resolve) => {
+        try {
+            const cDb = getCompanyDb(companyId);
+            // We only show transactions belonging to THIS user for their Joule context
+            cDb.all("SELECT * FROM transactions WHERE user_id = ? ORDER BY timestamp DESC", [userId], (err, rows) => {
+                if (err || !rows || rows.length === 0) return resolve("No transaction data available for this user.");
+                let totalIn = 0, totalOut = 0;
+                const cats = {};
+                
+                const now = new Date();
+                const currentMonthStr = now.toISOString().substring(0, 7);
+                let currentMonthIn = 0, currentMonthOut = 0;
 
-app.post('/api/companies', (req, res) => {
-    const { name, domain } = req.body;
-    sysDb.run("INSERT INTO companies (name, domain) VALUES (?, ?)", [name, domain], function(err) {
-        if (err) return res.status(400).json({ error: "Domain already registered." });
-        const companyId = this.lastID;
-        getCompanyDb(companyId); // Init DB
-        res.json({ success: true, company_id: companyId });
+                rows.forEach(r => {
+                    const v = parseFloat(r.wert) || 0;
+                    if (v >= 0) totalIn += v; else totalOut += Math.abs(v);
+                    cats[r.kategorie] = (cats[r.kategorie] || 0) + v;
+                    const m = r.timestamp.substring(0, 7);
+                    if (m === currentMonthStr) {
+                        if (v >= 0) currentMonthIn += v; else currentMonthOut += Math.abs(v);
+                    }
+                });
+
+                let s = "### YOUR FINANCIAL ANALYTICS (CONFIDENTIAL) ###\n";
+                s += `Current Month (${currentMonthStr}): +${currentMonthIn.toFixed(2)}€ | -${currentMonthOut.toFixed(2)}€ | Surplus: ${(currentMonthIn - currentMonthOut).toFixed(2)}€\n`;
+                s += `Your Total Balance: ${(totalIn - totalOut).toFixed(2)}€\n\n`;
+                
+                s += "### RECENT 5 TRANSACTIONS ###\n";
+                rows.slice(0, 5).forEach(r => s += `- [${r.timestamp.split('T')[0]}] ${r.name}: ${parseFloat(r.wert).toFixed(2)}€ (${r.kategorie})\n`);
+                resolve(s);
+            });
+        } catch(e) { resolve("Error accessing database context."); }
+    });
+}
+
+// --- API ---
+
+app.get('/api/companies/domain', (req, res) => {
+    const name = req.query.name;
+    if (!name) return res.status(400).json({ error: "Company name required" });
+    const domain = name.toLowerCase().replace(/\s+/g, '-') + ".com";
+    res.json({ domain });
+// --- Multi-User Onboarding & Auth API ---
+
+app.post('/api/onboarding/admin', async (req, res) => {
+    const { company_name, domain, full_name, email, password } = req.body;
+
+    if (!company_name || !domain || !full_name || !email || !password) {
+        return res.status(400).json({ error: "All fields are required." });
+    }
+
+    // 1. Check if email is globally indexed
+    sysDb.get("SELECT email FROM user_index WHERE email = ?", [email], async (err, indexed) => {
+        if (indexed) return res.status(400).json({ error: "A user with this email already exists." });
+
+        // 2. Create Company
+        sysDb.run("INSERT INTO companies (name, domain) VALUES (?, ?)", [company_name, domain], async function(err) {
+            if (err) {
+                if (err.message.includes('UNIQUE constraint failed')) {
+                    return res.status(400).json({ error: "This company domain is already registered." });
+                }
+                return res.status(500).json({ error: "Failed to create company directory." });
+            }
+
+            const companyId = this.lastID;
+            const cDb = getCompanyDb(companyId);
+
+            try {
+                const hashedPassword = await bcrypt.hash(password, 10);
+
+                // 3. Create Admin User in Company DB
+                cDb.run("INSERT INTO users (full_name, email, password, role) VALUES (?, ?, ?, ?)", 
+                    [full_name, email, hashedPassword, 'admin'], function(err) {
+
+                    if (err) {
+                        // Rollback company if user fails
+                        sysDb.run("DELETE FROM companies WHERE id = ?", [companyId]);
+                        return res.status(500).json({ error: "User creation failed within company." });
+                    }
+
+                    const userId = this.lastID;
+
+                    // 4. Index the user globally
+                    sysDb.run("INSERT INTO user_index (email, company_id) VALUES (?, ?)", [email, companyId], (err) => {
+                        if (err) {
+                            // Rollback user and company
+                            cDb.run("DELETE FROM users WHERE id = ?", [userId]);
+                            sysDb.run("DELETE FROM companies WHERE id = ?", [companyId]);
+                            return res.status(500).json({ error: "Final indexing failed." });
+                        }
+                        res.json({ success: true, company_id: companyId, user_id: userId });
+                    });
+                });
+            } catch (e) {
+                sysDb.run("DELETE FROM companies WHERE id = ?", [companyId]);
+                res.status(500).json({ error: "Security processing failed." });
+            }
+        });
     });
 });
 
@@ -100,13 +191,11 @@ app.post('/api/users/signup', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-
         const completeSignup = () => {
             cDb.run("INSERT INTO users (full_name, email, password, role) VALUES (?, ?, ?, ?)", 
                 [full_name, email, hashedPassword, role || 'user'], function(err) {
                 if (err) return res.status(400).json({ error: "Email already taken in this company." });
                 const userId = this.lastID;
-                // Add to global index
                 sysDb.run("INSERT INTO user_index (email, company_id) VALUES (?, ?)", [email, company_id], (err) => {
                     if (err) return res.status(500).json({ error: "Indexing failed." });
                     res.json({ success: true, user_id: userId });
@@ -123,9 +212,7 @@ app.post('/api/users/signup', async (req, res) => {
         } else {
             completeSignup();
         }
-    } catch (e) {
-        res.status(500).json({ error: "Hashing failed." });
-    }
+    } catch (e) { res.status(500).json({ error: "Hashing failed." }); }
 });
 
 app.post('/api/users/login', (req, res) => {
@@ -140,7 +227,6 @@ app.post('/api/users/login', (req, res) => {
             const match = await bcrypt.compare(password, row.password);
             if (!match) return res.status(401).json({ error: "Invalid credentials." });
             
-            // Get company info separately from sysDb
             sysDb.get("SELECT name FROM companies WHERE id = ?", [index.company_id], (err, comp) => {
                 res.json({ 
                     success: true, 
@@ -157,8 +243,6 @@ app.post('/api/users/login', (req, res) => {
         });
     });
 });
-
-// --- Invites & Management ---
 
 app.post('/api/invites', (req, res) => {
     const { company_id, expires_in_hours } = req.body;
@@ -183,14 +267,13 @@ app.get('/api/invites', (req, res) => {
 app.post('/api/invites/cancel', (req, res) => {
     const { code, company_id } = req.body;
     const cDb = getCompanyDb(company_id);
-    cDb.run("UPDATE invites SET used = 1 WHERE code = ?", [code], (err) => {
-        res.json({ success: true });
-    });
+    cDb.run("UPDATE invites SET used = 1 WHERE code = ?", [code], (err) => res.json({ success: true }));
 });
 
 app.get('/api/invites/validate', (req, res) => {
     const { code } = req.query;
-    const files = fs.readdirSync(path.join(APP_DIR, 'db')).filter(f => f.startsWith('company_'));
+    const dbDir = path.join(APP_DIR, 'db');
+    const files = fs.readdirSync(dbDir).filter(f => f.startsWith('company_'));
     let processed = 0;
     let found = false;
 
@@ -213,15 +296,10 @@ app.get('/api/invites/validate', (req, res) => {
     });
 });
 
-// --- User Management API ---
-
 app.get('/api/users', (req, res) => {
     const { company_id } = req.query;
-    if (!company_id) return res.status(400).json({ error: "Company ID required" });
     const cDb = getCompanyDb(company_id);
-    cDb.all("SELECT id, full_name, email, role FROM users", [], (err, rows) => {
-        res.json({ users: rows || [] });
-    });
+    cDb.all("SELECT id, full_name, email, role FROM users", [], (err, rows) => res.json({ users: rows || [] }));
 });
 
 app.put('/api/users/:id', (req, res) => {
@@ -242,9 +320,7 @@ app.delete('/api/users/:id', (req, res) => {
                 if (row.cnt <= 1) return res.status(403).json({ error: "last_admin", message: "Cannot delete last admin." });
                 deleteUser(user.email);
             });
-        } else {
-            deleteUser(user.email);
-        }
+        } else { deleteUser(user.email); }
     });
 
     function deleteUser(email) {
@@ -256,15 +332,11 @@ app.delete('/api/users/:id', (req, res) => {
     }
 });
 
-// --- User Settings API ---
-
 app.get('/api/config', (req, res) => {
     const { user_id, company_id } = req.query;
     if (!user_id || !company_id) return res.json({ app_version: APP_VERSION });
     const cDb = getCompanyDb(company_id);
-    cDb.get("SELECT * FROM user_settings WHERE user_id = ?", [user_id], (err, row) => {
-        res.json({ ...row, app_version: APP_VERSION });
-    });
+    cDb.get("SELECT * FROM user_settings WHERE user_id = ?", [user_id], (err, row) => res.json({ ...row, app_version: APP_VERSION }));
 });
 
 app.post('/api/config', (req, res) => {
@@ -273,8 +345,6 @@ app.post('/api/config', (req, res) => {
     cDb.run("INSERT INTO user_settings (user_id, nickname) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET nickname=excluded.nickname",
         [user_id, nickname], () => res.json({ success: true }));
 });
-
-// --- Transactions API ---
 
 app.get("/api/transactions", (req, res) => {
     const { company_id, user_id, limit=25, offset=0 } = req.query;
@@ -291,24 +361,28 @@ app.post('/api/transactions', (req, res) => {
         () => res.json({ success: true }));
 });
 
-// --- Joule Chat API ---
-
 app.post('/api/chat', async (req, res) => {
     const { company_id, user_id, messages } = req.body;
     const cDb = getCompanyDb(company_id);
-    cDb.get("SELECT nickname FROM user_settings WHERE user_id = ?", [user_id], (err, setting) => {
+    const summary = await getDatabaseSummary(company_id, user_id);
+    
+    cDb.get("SELECT nickname FROM user_settings WHERE user_id = ?", [user_id], async (err, setting) => {
         const nickname = setting?.nickname || "User";
-        cDb.all("SELECT * FROM transactions WHERE user_id = ? ORDER BY timestamp DESC LIMIT 10", [user_id], async (err, rows) => {
-            const summary = rows?.length > 0 ? rows.map(r => `${r.name}: ${r.wert}€`).join(", ") : "No data.";
-            const systemPrompt = `You are Joule. Addressing user as ${nickname}. Context: ${summary}`;
-            const resp = await fetchFn("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + process.env.GROQ_API_KEY },
-                body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role:"system", content:systemPrompt}, ...messages] })
-            });
-            const data = await resp.json();
-            res.json(data);
+        const systemPrompt = `You are Joule, an intelligent financial advisor for "Clarity". 
+Addressing user as ${nickname}. 
+
+SECURITY: You are strictly isolated to the data of the current user.
+${summary}
+
+Keep it professional and helpful.`;
+
+        const resp = await fetchFn("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + process.env.GROQ_API_KEY },
+            body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role:"system", content:systemPrompt}, ...messages] })
         });
+        const data = await resp.json();
+        res.json(data);
     });
 });
 
