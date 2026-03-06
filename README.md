@@ -73,5 +73,13 @@ Clarity ist eine mandantenfähige Finanzplattform mit Dashboard, Insights, Admin
 
 - Die aktuelle Produkt- und KI-Planung steht in `ROADMAP.md`.
 
+## Credits
+
+- [@loleckerliii](https://github.com/loleckerliii)
+- [@Flex6x](https://github.com/Flex6x)
+- [@lenadill](https://github.com/lenadill)
+- [@lifalinusfalkenberg-bot](https://github.com/lifalinusfalkenberg-bot)
+- [@Maxilo92](https://github.com/Maxilo92)
+
 ---
 Clarity Financial Management Platform · 2026
