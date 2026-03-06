@@ -132,15 +132,20 @@
                         Contact Human Support
                     </h3>
                     <p style="margin-bottom: 20px; color: #64748b;">Could Clair not help you further? Our expert team is at your disposal.</p>
-                    <form class="contact-form" id="supportForm" onsubmit="event.preventDefault(); alert('Thank you! We have received your request.'); this.reset();">
+                    <form class="contact-form" id="supportForm">
                         <div class="form-group">
-                            <input type="text" class="support-input" placeholder="Subject" required>
+                            <input type="text" id="supportSubject" class="support-input" placeholder="Subject" required>
                         </div>
                         <div class="form-group">
-                            <textarea class="support-textarea" placeholder="Describe your issue in detail..." required></textarea>
+                            <input type="email" id="supportContactEmail" class="support-input" placeholder="Your Email (optional)">
+                            <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px; margin-left: 4px;">If left empty, we will use your account email for replies.</p>
                         </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button type="submit" class="support-btn secondary">Send Request</button>
+                        <div class="form-group">
+                            <textarea id="supportMessage" class="support-textarea" placeholder="Describe your issue in detail..." required></textarea>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <button type="submit" id="btnSendSupport" class="support-btn secondary">Send Request</button>
+                            <p id="supportStatus" style="font-size: 0.9rem; margin-top: 10px; display: none;"></p>
                         </div>
                     </form>
                 </section>
@@ -164,6 +169,64 @@
     </button>
 
     <script>
+        const supportForm = document.getElementById('supportForm');
+        const btnSend = document.getElementById('btnSendSupport');
+        const statusMsg = document.getElementById('supportStatus');
+
+        supportForm.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const userStr = localStorage.getItem('clarityUser');
+            if (!userStr) {
+                alert("You must be logged in to send a support request.");
+                return;
+            }
+            const user = JSON.parse(userStr);
+
+            const subject = document.getElementById('supportSubject').value;
+            const contactEmailInput = document.getElementById('supportContactEmail').value.trim();
+            const message = document.getElementById('supportMessage').value;
+
+            // Fallback to account email if empty
+            const contactEmail = contactEmailInput || user.email;
+
+            btnSend.disabled = true;
+            btnSend.textContent = "Sending...";
+            statusMsg.style.display = "block";
+            statusMsg.style.color = "#64748b";
+            statusMsg.textContent = "Submitting your request...";
+
+            try {
+                const res = await fetch('/api/support/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        company_id: user.company_id,
+                        user_id: user.id,
+                        subject,
+                        contact_email: contactEmail,
+                        message
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    statusMsg.style.color = "#059669";
+                    statusMsg.textContent = "✓ " + (data.message || "Thank you! Your request has been sent.");
+                    supportForm.reset();
+                } else {
+                    throw new Error(data.error || "Failed to send request.");
+                }
+            } catch (err) {
+                statusMsg.style.color = "#dc2626";
+                statusMsg.textContent = "✕ Error: " + err.message;
+            } finally {
+                btnSend.disabled = false;
+                btnSend.textContent = "Send Request";
+            }
+        };
+
         function openClairSupport() {
             const diamondBtn = document.querySelector('.diamond-btn');
             if (diamondBtn) {

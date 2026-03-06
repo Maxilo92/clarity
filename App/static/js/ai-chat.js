@@ -223,7 +223,7 @@ Address the user naturally.
         });
     }
 
-    function appendMessage(text, role, save = true, attachment = null, isError = false, forceNoTypewriter = false, toolInfo = null) {
+    function appendMessage(text, role, save = true, attachment = null, isError = false, forceNoTypewriter = false, toolInfo = null, timestamp = null) {
         if (!text && !attachment) return;
         if (!messages) initRefs();
 
@@ -299,8 +299,8 @@ Address the user naturally.
         }
 
         // Timestamp
-        const now = new Date();
-        const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        const displayDate = timestamp ? new Date(timestamp) : new Date();
+        const timeStr = displayDate.getHours().toString().padStart(2, '0') + ':' + displayDate.getMinutes().toString().padStart(2, '0');
         const ts = document.createElement('div');
         ts.className = 'ai-message-timestamp';
         ts.textContent = timeStr;
@@ -312,7 +312,7 @@ Address the user naturally.
         messages.scrollTop = messages.scrollHeight;
 
         if (save) {
-            chatHistory.push({ role, content: text, attachment, timestamp: now.toISOString(), toolInfo });
+            chatHistory.push({ role, content: text, attachment, timestamp: displayDate.toISOString(), toolInfo });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistory.slice(-20)));
         }
     }
@@ -381,7 +381,15 @@ Address the user naturally.
             const apiMessages = [{ role: 'system', content: SYSTEM_PROMPT }].concat(
                 chatHistory.map(m => {
                     let content = m.content;
-                    if (m.attachment) content += `\n\n[CONTEXT: Attached transaction: ${m.attachment.name}, ${m.attachment.wert}€]`;
+                    if (m.attachment) {
+                        content += `\n\n[ATTACHED TRANSACTION - BEREITS IN DATENBANK]\n`;
+                        if (m.attachment.id) content += `- ID: ${m.attachment.id}\n`;
+                        content += `- Name: ${m.attachment.name}\n`;
+                        content += `- Betrag: ${m.attachment.wert}€\n`;
+                        if (m.attachment.kategorie) content += `- Kategorie: ${m.attachment.kategorie}\n`;
+                        if (m.attachment.timestamp) content += `- Datum: ${new Date(m.attachment.timestamp).toLocaleDateString()}\n`;
+                        content += `[ENDE ATTACHMENT]`;
+                    }
                     return { role: m.role === 'bot' ? 'assistant' : m.role, content };
                 })
             );
@@ -510,12 +518,13 @@ Address the user naturally.
             if (toolInfo) addToolTag(bubbleContainer, toolInfo);
 
             // Add timestamp
+            const now = new Date();
             const ts = document.createElement('div');
             ts.className = 'ai-message-timestamp';
-            ts.textContent = new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0');
+            ts.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
             bubbleContainer.appendChild(ts);
 
-            chatHistory.push({ role: 'bot', content: fullReply, toolInfo, timestamp: new Date().toISOString() });
+            chatHistory.push({ role: 'bot', content: fullReply, toolInfo, timestamp: now.toISOString() });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistory.slice(-20)));
 
             if (!panel || !panel.classList.contains('open')) {
@@ -562,7 +571,7 @@ Address the user naturally.
             const greeting = getTimeBasedGreeting();
             appendMessage(`${greeting}! Ich bin Clair. Wie kann ich dir heute helfen?`, 'bot', true);
         } else {
-            chatHistory.forEach(msg => appendMessage(msg.content, msg.role, false, msg.attachment, false, true, msg.toolInfo));
+            chatHistory.forEach(msg => appendMessage(msg.content, msg.role, false, msg.attachment, false, true, msg.toolInfo, msg.timestamp));
         }
     }
 

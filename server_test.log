@@ -1,0 +1,6 @@
+Clarity Server running on Port 3000
+[2026-03-06T11:57:17.512Z] POST /api/chat
+[Tool Calls] Processing 1 calls.
+[Tool Call] get_spending_analysis with args: { timeframe: 'month' }
+[Follow-up] Fetching from Groq...
+[Follow-up] Response status: 200

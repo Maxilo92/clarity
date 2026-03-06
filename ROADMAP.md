@@ -5,6 +5,7 @@
 - **Clair Reliability:** Robustere Tool-Auswahl, Streaming-Antworten und transparentes Feedback.
 - **Audit Logging:** Vollständige Traceability aller kritischen Aktionen (Transaktionen, KI-Aktionen).
 - **Admin UX:** Tab-basiertes Interface mit High-Performance Listen (Infinite Scroll) und Filtern.
+- **Support System:** Echte E-Mail-Integration (SMTP) für Support-Anfragen.
 - **Dev-Tools Basics:** Konsistenzscan für Datenqualität integriert.
 
 ## Q4 2026 – Team- & Admin-Funktionen

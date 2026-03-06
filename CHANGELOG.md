@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.9] - 2026-03-06
+### Fixed
+- **AI Data Access (Reporting):** Ein Problem wurde behoben, bei dem Claire behauptete, keinen Zugriff auf Finanzdaten für spezifische Zeiträume (z.B. Q3 2025) zu haben. Das Tool `get_spending_analysis` wurde erweitert, um nun auch Quartale und frei definierbare Zeiträume (`period`) verarbeiten zu können.
+
+## [1.5.8] - 2026-03-06
+### Added
+- **AI Upgrade (Paket D - Safety, Governance & Trust):**
+  - **Prompt Hardening:** Einführung von Schutzmechanismen gegen Prompt-Injection und System-Prompt-Leaks im KI-Kern. Claire lehnt nun Versuche ab, ihre internen Anweisungen preiszugeben.
+  - **Policy Layer:** Ein neuer Sicherheits-Layer im System-Prompt definiert klare Antwortregeln für sensible Aktionen und erzwingt eine strikte Datenzugriffs-Policy für die aktuelle Organisation und den Nutzer.
+  - **Action Guardrails:** Erhöhte Sensibilisierung bei Löschvorgängen und Massen-Operationen durch explizite Bestätigungsvorgaben.
+
+## [1.5.7] - 2026-03-06
+### Improved
+- **AI Upgrade (Paket C - Memory & Personalization):**
+  - **Conversation Continuity:** Der System-Prompt von Claire wurde optimiert, um den gesamten bisherigen Chat-Verlauf stärker zu gewichten und Antworten kohärenter an vorherige Aussagen anzupassen.
+  - **Attachment-Aware Reasoning:** Bei angehängten Transaktionen erhält Claire nun den vollständigen Daten-Kontext (ID, Kategorie, exaktes Datum). Ein striktes `[BEREITS IN DATENBANK]`-Flag verhindert zudem, dass Claire fälschlicherweise versucht, angehängte Transaktionen erneut zu buchen, sondern deren Daten nur für Analysen und Antworten nutzt.
+
+## [1.5.6] - 2026-03-06
+### Changed
+- **Unified Support Channel:** Die Konfiguration der Support-E-Mail wurde aus dem Admin-Panel entfernt. Das System nutzt nun konsistent die in der `.env`-Datei definierten Werte (`SUPPORT_EMAIL_RECEIVER` oder `SMTP_USER`), um eine einheitliche Support-Infrastruktur für alle Organisationen zu gewährleisten.
+
+## [1.5.5] - 2026-03-06
+### Added
+- **Developer Tools: Automated Repair:** Der Konsistenzscan wurde um eine automatisierte Reparaturfunktion erweitert. Administratoren können nun gefundene Probleme (0-Euro-Beträge, fehlende Kategorien, Zukunfts-Daten) mit einem Klick einzeln oder gesammelt ("Repair All") beheben.
+- **Backend Repair Engine:** Neuer API-Endpunkt `/api/transactions/consistency-repair` zur sicheren Durchführung von Korrektur-Operationen inklusive Audit-Logging.
+
+## [1.5.4] - 2026-03-06
+### Fixed
+- **AI Chat Timestamps:** Ein Fehler wurde behoben, bei dem im Chat-Verlauf von Claire immer die aktuelle Uhrzeit statt des tatsächlichen Sendezeitpunkts angezeigt wurde. Zeitstempel werden nun korrekt aus dem Verlauf geladen und konsistent gespeichert.
+
+## [1.5.3] - 2026-03-06
+### Improved
+- **Smart Reply Fallback:** Wenn das E-Mail-Feld im Support-Formular leer gelassen wird, nutzt das System nun automatisch die E-Mail-Adresse des aktuell angemeldeten Benutzers für Antworten.
+- **Simplified Email Template:** Die Support-E-Mails wurden für eine bessere Lesbarkeit optimiert, da nun immer eine gültige Antwort-Adresse vorhanden ist.
+
+## [1.5.2] - 2026-03-06
+### Added
+- **Optional Reply Email:** Nutzer können nun optional eine E-Mail-Adresse im Support-Formular angeben.
+- **Improved Reply Workflow:** Wenn eine Kontakt-E-Mail angegeben wird, wird diese automatisch als `replyTo` gesetzt, sodass Admins direkt aus ihrem E-Mail-Programm antworten können.
+- **Anonymous Support Support:** Anfragen ohne Kontakt-E-Mail sind weiterhin möglich, werden aber im System deutlich als "nicht antwortbar" markiert.
+
+## [1.5.1] - 2026-03-06
+### Added
+- **Configurable Support Email:** Administratoren können nun in den "Organization Settings" eine eigene Ziel-E-Mail-Adresse für Support-Anfragen hinterlegen.
+- **Dynamic Routing:** Support-Anfragen werden automatisch an die organisationsspezifische E-Mail-Adresse geroutet, mit automatischem Fallback auf System-Standardwerte.
+
+## [1.5.0] - 2026-03-06
+### Added
+- **Support Email Integration:** Die Support-Seite kann nun echte E-Mails über SMTP versenden. Anfragen werden automatisch dem richtigen Nutzer und Unternehmen zugeordnet.
+- **SMTP Fallback (Demo Mode):** Wenn kein SMTP-Server konfiguriert ist, werden Support-Anfragen zur Demonstration in der Server-Konsole protokolliert.
+- **Improved UX:** Der Sendevorgang auf der Support-Seite zeigt nun einen Ladezustand und detailliertes Feedback (Erfolg/Fehler) an.
+
 ## [1.4.4] - 2026-03-06
 ### Fixed
 - **Sync Fix (RBAC):** Ein Fehler wurde behoben, durch den der IndexManager aufgrund fehlender Berechtigungs-IDs (`requester_id`) keine Status-Updates vom Server abrufen konnte. Dies führte zu dauerhaften "Out of sync"-Meldungen trotz Reindexing.

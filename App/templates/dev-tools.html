@@ -254,6 +254,7 @@
 
                         <div class="card-footer">
                             <button class="devtool-btn devtool-btn-primary" id="btnConsistencyScan">Run Scan</button>
+                            <button class="devtool-btn devtool-btn-secondary" id="btnConsistencyRepair" style="display: none; background: #059669; color: white; border-color: #059669;">Repair All</button>
                             <span class="devtool-status" id="consistencyStatus"></span>
                         </div>
                     </div>
@@ -281,13 +282,17 @@
             }
         } catch(e) {}
 
-        // --- Consistency Scan ---
+        // --- Consistency Scan & Repair ---
+        let lastScanIssues = [];
+
         document.getElementById('btnConsistencyScan').addEventListener('click', async function() {
             const btn = this;
+            const repairBtn = document.getElementById('btnConsistencyRepair');
             const statusEl = document.getElementById('consistencyStatus');
             const resultsEl = document.getElementById('consistencyResults');
-            
+
             btn.disabled = true;
+            repairBtn.style.display = 'none';
             statusEl.textContent = 'Scanning...';
             statusEl.className = 'devtool-status status-busy';
             resultsEl.innerHTML = 'Scanning database...';
@@ -297,14 +302,19 @@
                 const res = await fetch(`/api/transactions/consistency-scan?company_id=${user.company_id}&requester_id=${user.id}`);
                 if (!res.ok) throw new Error("Failed to run scan.");
                 const data = await res.json();
-                
+
+                lastScanIssues = data.issues || [];
                 statusEl.textContent = `Found ${data.total_issues} issues`;
                 statusEl.className = data.total_issues === 0 ? 'devtool-status status-ok' : 'devtool-status status-err';
-                
+
                 if (data.total_issues === 0) {
                     resultsEl.innerHTML = '<span style="color: #059669; font-weight: 600;">✓ Database is consistent. No issues found.</span>';
                 } else {
-                    resultsEl.innerHTML = data.issues.map(iss => `<div style="margin-bottom: 4px;">• [${iss.type}] ${iss.message}</div>`).join('');
+                    resultsEl.innerHTML = data.issues.map(iss => `<div style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>• [${iss.type}] ${iss.message}</span>
+                        <button class="fix-btn" onclick="repairSpecificIssue('${iss.id}', '${iss.type}')" style="background: #e1fcf2; color: #059669; border: 1px solid #059669; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer; margin-left: 10px;">Fix</button>
+                    </div>`).join('');
+                    repairBtn.style.display = 'inline-block';
                 }
             } catch (e) {
                 statusEl.textContent = 'Error during scan';
@@ -315,6 +325,59 @@
             }
         });
 
+        async function repairIssues(issues) {
+            if (!issues || issues.length === 0) return;
+            const statusEl = document.getElementById('consistencyStatus');
+            const resultsEl = document.getElementById('consistencyResults');
+            const scanBtn = document.getElementById('btnConsistencyScan');
+            const repairBtn = document.getElementById('btnConsistencyRepair');
+
+            scanBtn.disabled = true;
+            repairBtn.disabled = true;
+            statusEl.textContent = 'Repairing...';
+            statusEl.className = 'devtool-status status-busy';
+
+            try {
+                const user = JSON.parse(localStorage.getItem('clarityUser'));
+                const res = await fetch('/api/transactions/consistency-repair', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        company_id: user.company_id,
+                        requester_id: user.id,
+                        issues: issues
+                    })
+                });
+
+                if (!res.ok) throw new Error("Repair failed.");
+                const data = await res.json();
+
+                statusEl.textContent = `Fixed ${data.fixed_count} issues`;
+                statusEl.className = 'devtool-status status-ok';
+                resultsEl.innerHTML = `<span style="color: #059669; font-weight: 600;">✓ Successfully repaired ${data.fixed_count} issues.</span>`;
+                repairBtn.style.display = 'none';
+
+                // Refresh data if needed
+                document.dispatchEvent(new Event('dataUpdated'));
+            } catch (e) {
+                statusEl.textContent = 'Repair Error';
+                statusEl.className = 'devtool-status status-err';
+                alert("Fehler bei der Reparatur: " + e.message);
+            } finally {
+                scanBtn.disabled = false;
+                repairBtn.disabled = false;
+            }
+        }
+
+        document.getElementById('btnConsistencyRepair').addEventListener('click', () => {
+            if (confirm(`Do you want to automatically repair ${lastScanIssues.length} issues?`)) {
+                repairIssues(lastScanIssues);
+            }
+        });
+
+        window.repairSpecificIssue = (id, type) => {
+            repairIssues([{ id, type }]);
+        };
         // --- Index Info ---
         async function loadIndexInfo() {
             const countEl     = document.getElementById('indexCount');

@@ -146,7 +146,7 @@
             <div class="admin-tabs">
                 <button class="tab-btn active" onclick="switchTab('team')">Team Management</button>
                 <button class="tab-btn" onclick="switchTab('system')">System Activity</button>
-                <button class="tab-btn" onclick="switchTab('config')">AI Configuration</button>
+                <button class="tab-btn" onclick="switchTab('config')">Organization Settings</button>
             </div>
 
             <!-- Tab: Team Management -->
@@ -265,23 +265,23 @@
                 </div>
             </div>
 
-            <!-- Tab: AI Configuration -->
+            <!-- Tab: Organization Settings -->
             <div id="tab-config" class="tab-content">
                 <div class="link-card" style="max-width: 800px; margin: 0 auto;">
-					<h3>Organization AI Profile</h3>
-                    <p>Provide Claire with specific knowledge about your organization's financial rules, reporting structures, or specific terminology. These instructions will influence how the AI interprets and categorizes your data.</p>
+					<h3>Organization Configuration</h3>
+                    <p>Manage your organization's AI context and specific rules. These settings apply to all team members.</p>
                     
                     <div style="margin-top: 25px;">
-                        <label style="font-size: 0.8rem; font-weight: 700; color: #475569; display: block; margin-bottom: 8px; text-transform: uppercase;">Organization Context & Rules</label>
+                        <label style="font-size: 0.8rem; font-weight: 700; color: #475569; display: block; margin-bottom: 8px; text-transform: uppercase;">AI Context & Organizational Rules</label>
                         <textarea id="companyContext" style="width: 100%; height: 250px; border-radius: 12px; border: 1px solid #e2e8f0; padding: 15px; font-family: inherit; font-size: 0.95rem; line-height: 1.5; resize: vertical;" placeholder="Example: 'Always categorize AWS and Azure under Infrastructure Costs. Our fiscal year starts in April...'"></textarea>
                     </div>
                     
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
                         <span id="contextStatus" style="font-size: 0.9rem; color: #059669; visibility: hidden; font-weight: 600; display: flex; align-items: center; gap: 6px;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            Changes saved successfully.
+                            Settings updated successfully.
                         </span>
-                        <button class="support-btn" style="min-width: 150px;" onclick="saveCompanyContext()">Update AI Profile</button>
+                        <button class="support-btn" style="min-width: 150px;" onclick="saveCompanyContext()">Save Configuration</button>
                     </div>
 				</div>
             </div>
@@ -582,14 +582,19 @@
                 await fetch('/api/companies/context', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ company_id: currentUser.company_id, requester_id: currentUser.id, user_id: currentUser.id, context })
+                    body: JSON.stringify({ 
+                        company_id: currentUser.company_id, 
+                        requester_id: currentUser.id, 
+                        user_id: currentUser.id, 
+                        context
+                    })
                 });
                 if (statusEl) {
                     statusEl.style.visibility = 'visible';
                     setTimeout(() => statusEl.style.visibility = 'hidden', 3000);
                 }
                 fetchAudit(true);
-            } catch(e) { alert("Failed to save profile."); }
+            } catch(e) { alert("Failed to save configuration."); }
         }
 
         async function loadCompanyContext() {
