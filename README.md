@@ -61,6 +61,16 @@ Clarity ist eine mandantenfähige Finanzplattform mit Dashboard, Insights, Admin
     ```
 4. App öffnen: `http://localhost:3000`
 
+## Render Deployment (Wichtig)
+
+Wenn auf Render ein Fehler wie `sqlite3 ... invalid ELF header` auftritt, wurde in der Regel ein lokales (z. B. macOS) `node_modules` hochgeladen.
+
+- Stelle sicher, dass `node_modules/` nicht mit deployed wird (siehe `.renderignore`).
+- Verwende auf Render als **Build Command**: `npm ci`
+- Verwende als **Start Command**: `npm start`
+
+So werden native Module wie `sqlite3` auf Linux korrekt installiert.
+
 ## Demo-Daten
 
 - Seed-Skript für umfangreiche Demo-Daten: `seed-demo-data.js`
