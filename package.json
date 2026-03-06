@@ -1,6 +1,6 @@
 {
   "name": "clarity-financial-tracker",
-  "version": "1.7.9",
+  "version": "1.8.0",
   "description": "Minimal proxy for Gemini / Generative Language API",
   "main": "server.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "prestart": "node scripts/ensure-sqlite3-linux.js",
     "start": "node server.js",
     "dev": "node server.js",
-    "test:e2e": "node tests/setup-e2e.js && npx playwright test tests/regression.spec.js"
+    "test:e2e": "node tests/setup-e2e.js && npx playwright test tests/*.spec.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2026-03-06
+### Improved
+- **Clair Mobile Optimization:** Enhanced Clair AI chat for mobile devices with improved viewport and keyboard handling using the `visualViewport` API. Added dynamic CSS variables for responsive height calculations and Safe-Area inset support.
+- **Mobile Touch Targets:** Increased all touch targets in Clair to minimum 44px for better mobile usability. Optimized footer padding and disclaimer styling to ensure no content is clipped on smartphone screens (390x844 viewport).
+- **Responsive Breakpoint:** Introduced 900px breakpoint specifically for Clair mobile layout with slide-from-bottom animation and dynamic panel height based on available viewport space.
+### Fixed
+- **Desktop CSS Isolation:** Fixed an issue where the mobile-only `overflow: hidden` rule was being applied globally, interfering with desktop components (e.g., sliders) when Clair was open. Now correctly scoped to mobile viewports only.
+- **Keyboard Handling:** Improved iOS keyboard detection to prevent panel from being pushed above viewport when keyboard appears during chat.
+
 ## [1.7.9] - 2026-03-06
 ### Fixed
 - **Auth Guard Stability:** Resolved an issue where users were "immediately kicked out" after login. The session validation is now more resilient against transient server errors and handles incomplete local data gracefully.
